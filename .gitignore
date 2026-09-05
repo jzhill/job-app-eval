@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Personal application material — never committed to this public repo.
+# Raw CV, essay drafts, and handover notes contain name/comp/location/visa
+# details. Pipeline-generated artifacts (context.md, variants/, evals/) are
+# fine to commit — see project CLAUDE.md.
+/input/
+
+# API keys
+.env
+*.key
