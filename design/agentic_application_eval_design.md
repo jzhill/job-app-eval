@@ -40,9 +40,9 @@ The pipeline drafts and scores; it does not decide alone.
 ## 2. Pipeline stages
 
 ```
-1.  JD Decomposition            → jd_raw.md → jd_itemised.md → jd_components.json
-2.  Form Decomposition          → form_raw.md → form_itemised.md → form_questions.json
-3.  Raw Context Capture         → raw_context.md
+1.  JD Decomposition            → (from input/job_posting.md) jd_itemised.md → jd_components.json
+2.  Form Decomposition          → (from input/job_posting.md) form_itemised.md → form_questions.json
+3.  Essay Response Capture      → (Jeremy writes input/essay_response.md directly)
 4.  External Reference Ingestion → external_references.md
 5.  Context Mapping             → tagged_context.json (+ tagged_context.md)
 6.  Reflective Interview        → interview_report.md
@@ -64,30 +64,35 @@ drafts.
 
 ### Stage 1 — JD Decomposition
 
-**Input:** a URL to the job posting (job board link) or pasted raw text.
+**Input:** `input/job_posting.md` — Jeremy copy-pastes the raw text of the
+job posting himself, directly from the browser. This replaces an earlier
+version of this design that had the pipeline fetch the URL and capture it
+verbatim via a script/agent — that added a fetch step, a second
+verification agent call, and real token cost to solve a problem a human
+copy-paste already solves for free: a direct paste has no risk of an LLM
+silently paraphrasing or summarizing on the way in, because there's no LLM
+in that path at all. Simplicity first.
 
-**Step 1a — Verbatim capture.** Fetch (if URL) or accept (if pasted) the JD
-text and capture it exactly as presented — preserving headings and bullet
-structure, no paraphrasing or summarizing. Output: `jd_raw.md`.
+**Step 1a — Itemization.** Break `input/job_posting.md` into a discrete,
+numbered list of items — every distinct requirement, responsibility,
+sentence, or bullet gets its own item, grouped under whatever section
+headers the source page itself used. This is a structural pass only; it is
+not yet the four-category semantic pass below. Output: `jd_itemised.md`.
 
-**Step 1b — Itemization.** Break `jd_raw.md` into a discrete, numbered list
-of items — every distinct requirement, responsibility, sentence, or bullet
-gets its own item, grouped under whatever section headers the source page
-itself used. This is a structural pass only; it is not yet the four-category
-semantic pass below. Output: `jd_itemised.md`.
+**Step 1b — Human verification.** Jeremy checks `jd_itemised.md` against
+the actual posting (which he has open, having just pasted from it) and
+confirms nothing was dropped, paraphrased, or invented, or kicks back
+specific items for correction. This replaces an earlier version of this
+design that used a second automated agent call for this check — a human
+glancing at a page he already has open is at least as reliable and costs
+nothing. The risk this guards against is still real and still
+generalizable: an LLM asked to itemize can quietly compress or drop a
+bullet, and since every downstream score in this pipeline traces back to
+`jd_components.json`, an unfaithful itemization poisons everything after
+it — this is why the checkpoint still exists, just cheaper now.
 
-**Step 1c — Verification.** An automated cross-check — ideally a fresh
-call/context, not the same one that produced the itemised file, mirroring
-the judge panel's own diversity principle (§ Stage 11) — compares
-`jd_itemised.md` against `jd_raw.md` item by item to confirm nothing was
-dropped, paraphrased, or invented. This guards against a real,
-generalizable risk: an LLM asked to "parse" a posting can quietly summarize
-or omit a bullet, and since every downstream score in this pipeline traces
-back to `jd_components.json`, an unfaithful source poisons everything
-after it. A discrepancy triggers re-itemization, not silent correction.
-
-**Step 1d — Semantic decomposition.** The verified `jd_itemised.md` — not
-the raw scrape directly — is decomposed into `jd_components.json`:
+**Step 1c — Semantic decomposition.** The verified `jd_itemised.md` is
+decomposed into `jd_components.json`:
 
 ```json
 {
@@ -116,22 +121,22 @@ the section-level rollup in Stage 12 (Aggregation).
 
 ### Stage 2 — Form Decomposition
 
-**Input:** a URL to the actual application form (the employer's application
-portal — a different document from the JD posting; for the Anthropic
-application in progress, the JD is confirmed but the form's actual question
-count is not) or pasted raw text.
+**Input:** the same `input/job_posting.md` as Stage 1 in the common case —
+many ATS platforms (Greenhouse included; confirmed against the real
+Anthropic posting) render the job description and the application form's
+fields on one page, so one paste covers both. If an employer's form truly
+lives on a separate page, Jeremy pastes that into `input/job_posting.md`
+as well (append, don't create a second file — one human-provided source
+per application keeps the input contract simple).
 
-**Step 2a — Verbatim capture** → `form_raw.md`, same fidelity rule as
-Stage 1a.
-
-**Step 2b — Itemization** → `form_itemised.md` — every field/question
+**Step 2a — Itemization** → `form_itemised.md` — every field/question
 captured as its own item, with whatever prompt text and stated limit
-appear on the source page.
+appear on the source page. Same approach as Stage 1a.
 
-**Step 2c — Verification** → the same fresh-context cross-check as Stage
-1c, confirming nothing was dropped or altered before proceeding.
+**Step 2b — Human verification** → same as Stage 1b: Jeremy checks
+`form_itemised.md` against the actual form.
 
-**Step 2d — Structural decomposition** → `form_questions.json`, purely
+**Step 2c — Structural decomposition** → `form_questions.json`, purely
 structural facts about the form itself. Deliberately does **not**
 pre-assign JD components to a question; that mapping happens at generation
 time (Stage 10), not here.
@@ -151,24 +156,26 @@ reference unambiguous and lets Stages 11–12 glob by question id.
 
 ---
 
-### Stage 3 — Raw Context Capture
+### Stage 3 — Essay Response Capture
 
-**Input:** Jeremy, writing freely.
-
-**Output:** `raw_context.md` — fully unstructured prose. No required
-headers, no `[addresses: ...]` tagging. He should write toward the JD
-loosely — attending to it, but without forcing himself into per-component
-or per-question structure, jumping between experience, motivation, and
-reflection in whatever order it comes out. The mapping work belongs to
-Stage 5, not to him.
+**Input/Output:** Jeremy writes directly into `input/essay_response.md` —
+fully unstructured prose. No required headers, no `[addresses: ...]`
+tagging. He should write toward the JD loosely — attending to it, but
+without forcing himself into per-component or per-question structure,
+jumping between experience, motivation, and reflection in whatever order
+it comes out. The mapping work belongs to Stage 5, not to him. There is no
+separate generated artifact for this stage — the file he writes is the
+one Stage 5 reads.
 
 ---
 
 ### Stage 4 — External Reference Ingestion
 
-**Input:** a list of resources Jeremy has collected as relevant background
-— URLs (articles, org pages, reports) and/or files (PDFs etc.). This is
-material about the external world, not personal experience.
+**Input:** `input/external_resources.md` (optional — a plain list of URLs
+Jeremy has collected as relevant background, one per line, with an
+optional short note) and/or files dropped in `input/external_refs/`
+(PDFs etc.). This is material about the external world, not personal
+experience.
 
 **Process:** each resource gets a quick, single-pass parse — lightweight,
 not the multi-step verbatim/verify treatment JD/form intake gets (§ Stages
@@ -208,8 +215,8 @@ material).
 
 ### Stage 5 — Context Mapping
 
-**Input:** `raw_context.md`, `external_references.md`, `jd_components.json`,
-`form_questions.json`.
+**Input:** `input/essay_response.md`, `external_references.md`,
+`jd_components.json`, `form_questions.json`.
 
 **Output:** `tagged_context.json` — the canonical, machine-generated
 mapping of fragments onto JD components and (once available) form
@@ -226,7 +233,7 @@ back specific fragments for correction.
     {"id": "frag_003", "source_excerpt": "In Kiribati, after landscaping commercial AI X-ray systems...",
      "jd_component_ids": ["req_clinical_ai", "resp_theory_of_change"],
      "form_question_ids": ["q_why_anthropic"], "confidence": "high",
-     "origin": "raw_context"},
+     "origin": "essay_response"},
     {"id": "frag_012", "source_excerpt": "Beneficial Deployments' Gates Foundation partnership...",
      "jd_component_ids": ["mission_beneficial_deployments"],
      "form_question_ids": [], "confidence": "high",
@@ -239,8 +246,8 @@ back specific fragments for correction.
 ```
 
 **`origin` matters beyond bookkeeping:** CV Tailoring's `claims_checklist`
-(Stage 9) may only trace a claim about Jeremy's own experience to a
-`raw_context` (or interview-derived) fragment — never to an
+(Stage 9) may only trace a claim about Jeremy's own experience to an
+`essay_response` (or interview-derived) fragment — never to an
 `external_reference` fragment, since a claim about Jeremy cannot be
 supported by something he merely read.
 
@@ -354,13 +361,13 @@ defeats the purpose of producing genuine variations.
 
 **New stage** — the CV was previously static input context only.
 
-**Input:** `jd_components.json`, `tagged_context.json`, the current CV,
+**Input:** `jd_components.json`, `tagged_context.json`, `input/current_cv.*`,
 `preferences.md`.
 
 **Output:** `cv_tailored.md` (reordered/re-emphasized bullets and summary,
 same section structure as the source CV) and `cv_tailoring_notes.json` —
 the auditable rationale plus a `claims_checklist` that traces every claim
-back to a specific context fragment (`origin: raw_context` or an
+back to a specific context fragment (`origin: essay_response` or an
 interview-derived fragment only — never `origin: external_reference`, per
 Stage 5) or flags it as unsupported:
 
@@ -542,18 +549,18 @@ shows what actually needs to be shared vs. per-application.
 
 ```
 repo/
-├── input/                       # gitignored — raw personal source material
-│   ├── cv_source.md
-│   ├── external_refs/           # raw files (PDFs etc.) Jeremy collects
+├── input/                       # gitignored — raw human-provided material
+│   ├── job_posting.md           # required — pasted verbatim by Jeremy
+│   ├── current_cv.{docx,pdf,md} # required — whichever format is on hand
+│   ├── essay_response.md        # required — Jeremy's free-written response
+│   ├── external_resources.md    # optional — list of URLs, one per line
+│   ├── external_refs/           # optional — raw files (PDFs etc.)
 │   └── past_drafts/
-├── jd_raw.md
 ├── jd_itemised.md
 ├── jd_components.json
-├── form_raw.md
 ├── form_itemised.md
 ├── form_questions.json
 ├── external_references.md
-├── raw_context.md
 ├── tagged_context.json
 ├── tagged_context.md            # auto-rendered, for review only
 ├── interview_report.md
@@ -581,8 +588,8 @@ repo/
 │   └── gen2/
 │       └── round_config.json
 ├── scripts/
-│   ├── decompose_jd.py          # Stage 1: capture, itemize, verify, decompose
-│   ├── decompose_form.py        # Stage 2: same treatment for the form
+│   ├── decompose_jd.py          # Stage 1: itemize input/job_posting.md, decompose
+│   ├── decompose_form.py        # Stage 2: same treatment for the form fields
 │   ├── ingest_references.py     # Stage 4
 │   ├── tag_context.py           # Stage 5
 │   ├── interview.py             # Stage 6: brief-out / ingest-back, not the conversation itself
@@ -592,15 +599,18 @@ repo/
 │   ├── run_judges.py
 │   ├── aggregate.py
 │   └── plan_next_gen.py
-└── README.md
+├── README.md                     # required/optional inputs, how to run each stage
+└── .gitignore
 ```
 
-`jd_raw.md`/`jd_itemised.md`/`form_raw.md`/`form_itemised.md` reproduce
-public posting text (not personal information), so — like
-`jd_components.json` — they're intended to be public, part of the same
-audit trail. Raw files Jeremy collects for Stage 4 (PDFs etc.) live in
-`input/external_refs/` and stay gitignored; the `external_references.md`
-digest generated from them is public.
+Everything under `input/` is human-provided and stays gitignored, full
+stop — this is a simpler rule than an earlier version of this design that
+split "public JD text" from "private personal text" within the raw-source
+layer itself. Now the line is just: raw input (private, in `input/`) vs.
+generated artifact (public, at repo root). `jd_itemised.md`,
+`jd_components.json`, `form_itemised.md`, `form_questions.json`, and
+`external_references.md` are all generated from `input/` files and are
+intended to be public, part of the audit trail.
 
 Git-trackable and diffable across generations by design — `git diff
 drafts/gen1/v01/q_why_anthropic.md drafts/gen2/v01/q_why_anthropic.md`
@@ -659,8 +669,18 @@ default starting assumption.
   variations. `style_fidelity` exists only to catch drift toward generic
   AI-assistant phrasing, and triggers a single targeted regeneration,
   never a full re-optimization pass.
-- The verbatim-capture/itemize/verify pattern (Stages 1–2) exists because
-  fidelity to source matters everywhere in this pipeline, not just for
-  overclaim risk about Jeremy's own experience: a JD or form that's been
-  silently paraphrased or trimmed during "parsing" poisons every score
-  that traces back to it, the same way a bad `jd_components.json` would.
+- The itemize/human-verify pattern (Stages 1–2) exists because fidelity to
+  source matters everywhere in this pipeline, not just for overclaim risk
+  about Jeremy's own experience: a JD or form that's been silently
+  compressed or trimmed during itemization poisons every score that traces
+  back to it, the same way a bad `jd_components.json` would. An earlier
+  version of this design also had a script/agent fetch the posting by URL
+  and cross-check the itemization with a second automated call — cut in
+  favor of a direct human paste (removes the fetch-fidelity risk entirely)
+  plus a human glance at the itemization (cheaper and at least as reliable
+  as a second agent call, since Jeremy already has the source open). The
+  first real run of this stage (against the actual Anthropic posting, before
+  this simplification) caught genuine omissions this way — a dropped
+  location line, a few ellipsis-truncated clauses — so the checkpoint
+  itself is worth keeping even though the fetch/agent-verify mechanism
+  around it wasn't.
