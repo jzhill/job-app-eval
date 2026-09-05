@@ -12,6 +12,11 @@ This is v1 of a design meant to generalize beyond a single application
 itself stays single-application/flat for now (see §3) — the generalization
 is in the pipeline's shape, not yet in the folder structure.
 
+This document is meant to be read start to finish by a human. Exact JSON
+shapes for generated files are kept out of the main text and collected in
+[`data_schemas.md`](data_schemas.md) instead, linked from wherever a stage
+below produces one.
+
 ---
 
 ## 1. Core principle
@@ -92,24 +97,11 @@ bullet, and since every downstream score in this pipeline traces back to
 it — this is why the checkpoint still exists, just cheaper now.
 
 **Step 1c — Semantic decomposition.** The verified `jd_itemised.md` is
-decomposed into `jd_components.json`:
-
-```json
-{
-  "required_qualifications": [
-    {"id": "req_clinical_ai", "text": "Direct experience evaluating/validating clinical AI or ML tools"}
-  ],
-  "preferred_qualifications": [
-    {"id": "pref_llm_specific", "text": "Hands-on AI/ML product experience (eval harnesses, guardrails)"}
-  ],
-  "core_responsibilities": [
-    {"id": "resp_partnerships", "text": "Build research partnerships with governments and institutions"}
-  ],
-  "mission_signals": [
-    {"id": "mission_reliable_ai", "text": "Reliable, interpretable, steerable AI"}
-  ]
-}
-```
+decomposed into `jd_components.json`, which sorts everything into four
+categories — required qualifications, preferred qualifications, core
+responsibilities, and mission signals — with each item keeping a short id
+and the exact text it came from. (Exact file shape:
+[`data_schemas.md`](data_schemas.md#jd_componentsjson).)
 
 **Reviewed and hand-edited by Jeremy** — a wrong or sloppy decomposition
 poisons every downstream score. These four top-level keys
@@ -137,18 +129,11 @@ appear on the source page. Same approach as Stage 1a.
 `form_itemised.md` against the actual form.
 
 **Step 2c — Structural decomposition** → `form_questions.json`, purely
-structural facts about the form itself. Deliberately does **not**
-pre-assign JD components to a question; that mapping happens at generation
-time (Stage 10), not here.
-
-```json
-{
-  "questions": [
-    {"id": "q_why_anthropic", "prompt_text": "Why do you want to work at Anthropic?",
-     "limit": {"type": "words", "max": 400}, "required": true}
-  ]
-}
-```
+structural facts about the form itself: each question gets an id, its
+exact prompt text, any stated word/character limit, and whether it's
+required. Deliberately does **not** pre-assign JD components to a
+question; that mapping happens at generation time (Stage 10), not here.
+(Exact file shape: [`data_schemas.md`](data_schemas.md#form_questionsjson).)
 
 A generated draft references its question by file location, not an
 embedded field: `drafts/genN/vXX/q_why_anthropic.md`. This keeps the
@@ -227,23 +212,12 @@ shape the original hand-tagged file used) is auto-generated purely for the
 human checkpoint — Jeremy never edits it directly; he approves it or kicks
 back specific fragments for correction.
 
-```json
-{
-  "fragments": [
-    {"id": "frag_003", "source_excerpt": "In Kiribati, after landscaping commercial AI X-ray systems...",
-     "jd_component_ids": ["req_clinical_ai", "resp_theory_of_change"],
-     "form_question_ids": ["q_why_anthropic"], "confidence": "high",
-     "origin": "essay_response"},
-    {"id": "frag_012", "source_excerpt": "Beneficial Deployments' Gates Foundation partnership...",
-     "jd_component_ids": ["mission_beneficial_deployments"],
-     "form_question_ids": [], "confidence": "high",
-     "origin": "external_reference"}
-  ],
-  "coverage_gaps": [
-    {"jd_component_id": "resp_partnerships", "status": "weak"}
-  ]
-}
-```
+Each fragment records: the source text itself, which JD components and
+form questions it supports, how confident the mapping is, and where it
+came from — Jeremy's own writing, the interview, or an external reference
+(the `origin` field, see below). A separate list flags JD components with
+weak or no supporting material yet. (Exact file shape:
+[`data_schemas.md`](data_schemas.md#tagged_contextjson).)
 
 **`origin` matters beyond bookkeeping:** CV Tailoring's `claims_checklist`
 (Stage 9) may only trace a claim about Jeremy's own experience to an
@@ -366,25 +340,11 @@ defeats the purpose of producing genuine variations.
 
 **Output:** `cv_tailored.md` (reordered/re-emphasized bullets and summary,
 same section structure as the source CV) and `cv_tailoring_notes.json` —
-the auditable rationale plus a `claims_checklist` that traces every claim
-back to a specific context fragment (`origin: essay_response` or an
-interview-derived fragment only — never `origin: external_reference`, per
-Stage 5) or flags it as unsupported:
-
-```json
-{
-  "changes": [
-    {"section": "PEARL entry", "change": "moved AI X-ray bullet to lead position",
-     "reason": "matches req_clinical_ai, previously buried"}
-  ],
-  "claims_checklist": [
-    {"claim": "worked closely with Delft and Fuji to select and adopt AI X-ray tools",
-     "traceable_to": "frag_003", "overclaim_risk": {"score": 1, "comment": "supported, matches corrected framing"}},
-    {"claim": "calibrated detection thresholds", "traceable_to": null,
-     "overclaim_risk": {"score": 5, "comment": "matches known prior overclaim pattern — do not include"}}
-  ]
-}
-```
+a record of what changed and why, plus a claims checklist: every factual
+claim in the tailored CV is traced back to a specific context fragment
+(`origin: essay_response` or an interview-derived fragment only — never
+`origin: external_reference`, per Stage 5), or flagged if it can't be
+traced. (Exact file shape: [`data_schemas.md`](data_schemas.md#cv_tailoring_notesjson).)
 
 **Deliberately single-pass, not a variant tournament.** CVs are
 factual/structured and lower voice-sensitivity than an essay, so the
@@ -431,29 +391,13 @@ loop) so each call is a clean, scriptable, loggable unit.
 
 **Structured rubric, scored per-JD-component and per-question, not free
 text — and evaluated as a whole application package, not siloed per
-question.** Each judge produces **one record per variant** (not one per
-question), covering the full bundle (all question drafts + the tailored
-CV):
-
-```json
-{
-  "variant_id": "gen3_v07",
-  "judge_id": "judge_skeptical_senior",
-  "component_scores": {
-    "req_clinical_ai": {"score": 4, "comment": "Concrete Kiribati example, but doesn't name what was non-standard vs off-the-shelf CAD4TB."},
-    "resp_partnerships": {"score": 2, "comment": "Almost entirely absent."}
-  },
-  "question_scores": {
-    "q_why_anthropic": {"score": 4, "comment": "Strong, direct answer to the actual prompt."}
-  },
-  "cv_evaluation": {"score": 4, "comment": "AI X-ray work now visible and quantified; good."},
-  "style_fidelity": {"score": 4, "comment": "One sentence drifts toward generic phrasing mid-paragraph 3.",
-                      "weight": "low — sanity check only, not blended into content scores"},
-  "overall_score": 4,
-  "overall_outcome": "screen_in",
-  "overall_candidate_feedback": "Strong on validation philosophy, weak on partnership evidence."
-}
-```
+question.** Each judge produces **one evaluation per variant** (not one
+per question), covering the full bundle (all question drafts + the
+tailored CV): a score and comment for every JD component, a score and
+comment for every form question, an evaluation of the CV, a low-weight
+style-fidelity check kept separate from content scoring, and an overall
+score, outcome, and comment for the whole package. (Exact file shape:
+[`data_schemas.md`](data_schemas.md#judge-record).)
 
 `component_scores` stays **granular** (per individual JD-component id, not
 just per section) — this is still what drives Stage 14's decision about
@@ -521,18 +465,10 @@ framing exactly as-is, this is load-bearing for the overclaim correction.
 
 **Not a fully automatic genetic/mutation loop.** The orchestrator reads
 `rounds/genN/direction.md` + `summary.md` + `preferences.md` and produces
-`rounds/gen(N+1)/round_config.json` — finalizing mode and variant count
-explicitly for the next round rather than defaulting:
-
-```json
-{
-  "mode": "convergence",
-  "variant_count": 1,
-  "carried_forward_commentary": "rounds/genN/direction.md",
-  "retain_verbatim": ["belief, not a credential opening (v07)"],
-  "drop": ["political-fragility paragraph"]
-}
-```
+`rounds/gen(N+1)/round_config.json` — recording the finalized mode and
+variant count for the next round, a pointer back to the direction file it
+was built from, and explicit lists of phrases to retain verbatim or drop.
+(Exact file shape: [`data_schemas.md`](data_schemas.md#round_configjson).)
 
 Jeremy approves or adjusts before the next generation runs. Automatic
 mutation without a human step is a reasonable future feature once the
