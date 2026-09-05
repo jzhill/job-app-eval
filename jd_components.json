@@ -1,0 +1,43 @@
+{
+  "role": "Partner Manager, Global Health",
+  "source": "https://job-boards.greenhouse.io/anthropic/jobs/5310996008",
+  "required_qualifications": [
+    {"id": "req_clinical_practice", "text": "Medical training and clinical practice (MD, GP, MBBS, DO, or equivalent), with direct experience delivering care in low-resource settings — reasoning fluidly from how diagnosis, triage, treatment, and referral happen at the point of care in LMICs.", "jd_item": 17},
+    {"id": "req_lmic_workflow_understanding", "text": "A concrete, on-the-ground understanding of clinical and care-delivery workflows in LMICs, and what they mean for how AI tools must be designed and evaluated.", "jd_item": 18},
+    {"id": "req_clinical_ai_evaluation", "text": "Direct experience evaluating or validating clinical AI/ML tools — understanding the gap between benchmark performance and real-world clinical safety.", "jd_item": 19},
+    {"id": "req_clinical_research_evidence", "text": "Deep expertise in clinical research and evidence generation for digital health or AI tools, with a clear view of what counts as credible evidence for clinical safety and effectiveness.", "jd_item": 20},
+    {"id": "req_regulatory_normative", "text": "A strong command of the regulatory and normative landscape for clinical AI, including WHO processes, national regulatory authorities in LMICs, and research ethics.", "jd_item": 21},
+    {"id": "req_research_partnerships", "text": "A track record of building research partnerships with academic and in-country researchers, treating local partners as scientific collaborators rather than data-collection sites.", "jd_item": 22},
+    {"id": "req_high_agency", "text": "High agency, a strong team orientation, and comfort with ambiguity.", "jd_item": 23},
+    {"id": "req_travel_impact_drive", "text": "A genuine drive to maximize impact for underserved communities, and willingness to travel regularly to research and partner sites (~25%).", "jd_item": 24}
+  ],
+  "preferred_qualifications": [
+    {"id": "pref_ai_ml_product_experience", "text": "Hands-on experience building or shaping AI/ML products or tooling — eval harnesses, agentic scaffolding, grounding and guardrails, or clinical decision-support workflows.", "jd_item": 25},
+    {"id": "pref_publication_record", "text": "A publication record in digital health, clinical AI evaluation, or implementation science.", "jd_item": 26},
+    {"id": "pref_healthtech_ai_company_experience", "text": "Experience at a healthtech or AI company in clinical validation, clinical quality, or medical affairs.", "jd_item": 27},
+    {"id": "pref_philanthropic_funder_experience", "text": "Experience working with philanthropic funders on evidence generation or research strategy.", "jd_item": 28},
+    {"id": "pref_lmic_direct_clinical", "text": "Direct clinical experience in a low- or middle-income country, including with humanitarian or global-health delivery organizations.", "jd_item": 29}
+  ],
+  "core_responsibilities": [
+    {"id": "resp_research_eval_agenda", "text": "Own the clinical research and evaluation agenda for global health work — define what needs to be proven, to what standard, and with whom.", "jd_item": 11},
+    {"id": "resp_validation_frameworks", "text": "Design clinical evaluations and validation frameworks for LLMs in LMIC contexts, covering accuracy, safety, multilingual performance, and real-world conditions, in partnership with research/evals/product teams.", "jd_item": 12},
+    {"id": "resp_theory_of_change", "text": "Develop theories of change and outcome metrics connecting model capability to care quality, health-worker performance, and patient outcomes.", "jd_item": 13},
+    {"id": "resp_partnerships_regulatory", "text": "Build and manage global research partnerships, and engage with relevant regulatory and normative bodies (WHO, national authorities, research-ethics bodies).", "jd_item": 14},
+    {"id": "resp_product_grounding", "text": "Partner with internal research and product teams to improve Claude for clinical use cases in low-resource settings; stay grounded in how care is actually delivered in LMICs.", "jd_item": 15},
+    {"id": "resp_broader_portfolio", "text": "Contribute across the broader global health portfolio — adjacent workstreams, team strategy, thought partnership.", "jd_item": 16}
+  ],
+  "mission_signals": [
+    {"id": "mission_reliable_interpretable_steerable", "text": "Anthropic's mission is to create reliable, interpretable, and steerable AI systems.", "jd_item": 1},
+    {"id": "mission_safe_beneficial", "text": "AI should be safe and beneficial for users and for society as a whole.", "jd_item": 2},
+    {"id": "mission_beneficial_deployments", "text": "Beneficial Deployments ensures AI reaches and benefits the communities that need it most, partnering with nonprofits, governments, and mission-driven organizations across education, global health, economic mobility, and life sciences.", "jd_item": [4, 5]},
+    {"id": "mission_big_science", "text": "The highest-impact AI research is 'big science' — a single cohesive team on a few large-scale efforts, advancing steerable, trustworthy AI rather than smaller, more specific puzzles.", "jd_item": 38},
+    {"id": "mission_empirical_science", "text": "AI research is treated as an empirical science, with as much in common with physics and biology as with traditional computer science.", "jd_item": 39},
+    {"id": "mission_collaborative_culture", "text": "An extremely collaborative group that hosts frequent research discussions and values communication skills highly.", "jd_item": 40},
+    {"id": "mission_pbc_benefits", "text": "Anthropic is a public benefit corporation.", "jd_item": 42},
+    {"id": "mission_ai_usage_policy", "text": "Anthropic has a specific published policy governing candidates' use of AI during the application process.", "jd_item": 43}
+  ],
+  "excluded_as_non_scoreable": {
+    "note": "Present in jd_raw.md/jd_itemised.md for completeness but not carried into components, since they are eligibility/logistics facts rather than content an essay is scored against.",
+    "items": [30, 31, 32, 33, 34, 35, 36, 37]
+  }
+}

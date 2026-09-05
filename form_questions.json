@@ -1,0 +1,37 @@
+{
+  "source": "https://job-boards.greenhouse.io/anthropic/jobs/5310996008",
+  "questions": [
+    {
+      "id": "q_ai_fluency",
+      "prompt_text": "Please describe your fluency in AI.",
+      "limit": null,
+      "required": true,
+      "form_item": 6
+    },
+    {
+      "id": "q_low_resource_experience",
+      "prompt_text": "Please describe your experience working in low-resource settings.",
+      "limit": null,
+      "required": true,
+      "form_item": 7
+    },
+    {
+      "id": "q_why_anthropic",
+      "prompt_text": "Why do you want to work at Anthropic?",
+      "limit": {"type": "words", "target_min": 200, "target_max": 400, "note": "stated as 'often 200-400 words', not a hard cap"},
+      "required": true,
+      "form_item": 11
+    },
+    {
+      "id": "q_additional_information",
+      "prompt_text": "Add a cover letter or anything else you want to share.",
+      "limit": null,
+      "required": false,
+      "form_item": 14
+    }
+  ],
+  "non_content_fields_excluded": {
+    "note": "Logistics/eligibility/identity fields present in form_raw.md and form_itemised.md but out of scope here — not drafted content.",
+    "form_items": [1, 2, 3, 4, 5, 8, 9, 10, 12, 13, 15, 16, 17, 18, 19, 20]
+  }
+}
