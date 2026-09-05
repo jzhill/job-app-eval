@@ -7,11 +7,14 @@ specific job posting, using a multi-judge LLM panel. Full design:
 
 ## Setup
 
-1. `input/` is gitignored — nothing you put there is committed. Everything
-   the pipeline generates from it (itemised JD/form, decomposed components,
-   drafts, evals) is committed and public.
+1. `python -m venv .venv` then `.venv/Scripts/activate` (Windows) or
+   `source .venv/bin/activate` (Mac/Linux), then
+   `pip install -r requirements.txt`.
 2. Set `ANTHROPIC_API_KEY` in your environment before running any script —
    generation and judging call the Anthropic API directly.
+3. `input/` is gitignored — nothing you put there is committed. Everything
+   the pipeline generates from it (itemised JD/form, decomposed components,
+   drafts, evals) is committed and public.
 
 ## Required inputs (place in `input/`)
 
@@ -39,6 +42,39 @@ already have it open, since you just pasted from it. Confirm nothing was
 dropped or altered, or fix the specific item. This is a cheap but real
 checkpoint: an LLM asked to itemise a posting can quietly compress or drop
 a line, and everything downstream scores against this file.
+
+## Running the pipeline
+
+Once the required inputs are in place:
+
+```
+python scripts/decompose_jd.py                  # writes jd_itemised.md -- review it
+python scripts/decompose_jd.py --decompose       # writes jd_components.json -- review/edit it
+
+python scripts/decompose_form.py                 # writes form_itemised.md -- review it
+python scripts/decompose_form.py --decompose      # writes form_questions.json
+
+python scripts/ingest_references.py               # optional, writes external_references.md
+
+python scripts/tag_context.py                     # writes tagged_context.json/.md -- review it,
+                                                    # especially anything flagged low-confidence
+
+python scripts/interview.py                        # writes interview_brief.md -- paste into a
+                                                    # voice-mode app (Claude/Gemini/ChatGPT),
+                                                    # have the conversation, save what it gives you
+python scripts/interview.py --ingest <path>        # writes interview_report.md from that output
+
+python scripts/build_voice_profile.py              # optional, needs input/past_drafts/*.md
+python scripts/tailor_cv.py                        # writes cv_tailored.md + cv_tailoring_notes.json
+
+python scripts/generate_drafts.py --gen 1          # writes drafts/gen1/vNN/
+python scripts/run_judges.py --gen 1               # writes evals/gen1/ (skipped in convergence rounds)
+python scripts/aggregate.py --gen 1                # writes evals/gen1/summary.md -- read this yourself
+
+# write rounds/gen1/direction.md yourself (see design doc §Stage 13), then:
+python scripts/plan_next_gen.py --gen 1            # writes rounds/gen2/round_config.json
+python scripts/generate_drafts.py --gen 2          # next round, repeat
+```
 
 See the design doc for the full pipeline (14 stages) and what each script
 produces.
