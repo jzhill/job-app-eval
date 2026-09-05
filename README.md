@@ -10,8 +10,10 @@ specific job posting, using a multi-judge LLM panel. Full design:
 1. `python -m venv .venv` then `.venv/Scripts/activate` (Windows) or
    `source .venv/bin/activate` (Mac/Linux), then
    `pip install -r requirements.txt`.
-2. Set `ANTHROPIC_API_KEY` in your environment before running any script —
-   generation and judging call the Anthropic API directly.
+2. Copy `.env.example` to `.env` and fill in your key from
+   console.anthropic.com: `ANTHROPIC_API_KEY=sk-ant-...`. `.env` is
+   gitignored and loaded automatically by every script — never commit it,
+   never put the key anywhere else in the repo.
 3. `input/` is gitignored — nothing you put there is committed. Everything
    the pipeline generates from it (itemised JD/form, decomposed components,
    drafts, evals) is committed and public.

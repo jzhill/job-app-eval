@@ -6,9 +6,12 @@ import re
 from pathlib import Path
 
 import anthropic
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 INPUT = ROOT / "input"
+
+load_dotenv(ROOT / ".env")
 
 DEFAULT_MODEL = "claude-sonnet-5"
 

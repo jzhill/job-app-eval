@@ -4,3 +4,4 @@ pypdf
 requests
 beautifulsoup4
 python-frontmatter
+python-dotenv
