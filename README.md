@@ -5,6 +5,36 @@ evaluates job-application text (essay questions + tailored CV) against a
 specific job posting, using a multi-judge LLM panel. Full design:
 [`design/agentic_application_eval_design.md`](design/agentic_application_eval_design.md).
 
+## Background
+
+This started as a manual pilot for one specific application (Anthropic's
+Partner Manager, Global Health role): drafting a "Why this role" essay by
+hand across several revisions, then running each version through a naive
+LLM acting as an HR screener to see what an outside reader would flag.
+Nine separate runs later, a clear, consistent pattern of findings emerged
+across all of them — evidence that the naive-screener approach was
+surfacing real signal, not noise from one run's phrasing.
+
+That manual process also caught something more consequential than
+polish: an early draft overstated the candidate's role in a piece of
+past technical work — a mistake the writer hadn't noticed himself, and
+one an LLM drafting agent could easily reintroduce during later revision
+if nothing was checking for it. That near-miss is the direct reason this
+pipeline treats overclaim risk as a first-class, permanent judge score
+(see the design doc) rather than something to catch by eye each time.
+
+The manual process worked, but it didn't scale — nine ad hoc runs,
+read and synthesized by hand, is a lot of overhead for one application,
+and the whole point of doing this well is to apply what worked to future
+applications too. This repo formalizes that manual workflow into a
+repeatable pipeline: decompose the job posting into scoreable components,
+draft against them, evaluate with a diverse judge panel instead of one
+screener, and aggregate the findings automatically. There's also a
+second, more pointed reason to build it well: a tool that evaluates and
+improves an application for an AI safety company, built using careful,
+skeptical evaluation methodology, is itself a small demonstration of the
+kind of judgment the role is looking for.
+
 ## Setup
 
 1. `python -m venv .venv` then `.venv/Scripts/activate` (Windows) or
@@ -14,9 +44,13 @@ specific job posting, using a multi-judge LLM panel. Full design:
    console.anthropic.com: `ANTHROPIC_API_KEY=sk-ant-...`. `.env` is
    gitignored and loaded automatically by every script — never commit it,
    never put the key anywhere else in the repo.
-3. `input/` is gitignored — nothing you put there is committed. Everything
-   the pipeline generates from it (itemised JD/form, decomposed components,
-   drafts, evals) is committed and public.
+3. Only code and documentation are public here. `input/` is gitignored —
+   nothing you put there is committed — and so is everything the pipeline
+   generates from it for a real run (itemised JD/form, decomposed
+   components, drafts, evals, everything under `drafts/`/`evals/`/
+   `rounds/`). Draft text and judge scores are the application's actual
+   substance, not just a repackaging of public information, so none of it
+   belongs in a public repo.
 
 ## Required inputs (place in `input/`)
 

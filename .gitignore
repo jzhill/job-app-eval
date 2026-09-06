@@ -217,11 +217,30 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Personal application material — never committed to this public repo.
-# Raw CV, essay drafts, and handover notes contain name/comp/location/visa
-# details. Pipeline-generated artifacts (context.md, variants/, evals/) are
-# fine to commit — see project CLAUDE.md.
+# All pipeline data stays private -- never committed to this public repo.
+# Only code and documentation are public here. This covers both the
+# human-provided input/ (CV, essay drafts, job posting) and everything the
+# pipeline generates from it for a real run (draft text, judge scores,
+# decomposed JD/form) -- both reveal application content/strategy that
+# shouldn't be public, not just personal identifying details.
+# See project CLAUDE.md and README.md ("Background") for why.
 /input/
+/jd_itemised.md
+/jd_components.json
+/form_itemised.md
+/form_questions.json
+/external_references.md
+/tagged_context.json
+/tagged_context.md
+/interview_brief.md
+/interview_report.md
+/preferences.md
+/voice_profile.md
+/cv_tailored.md
+/cv_tailoring_notes.json
+/drafts/
+/evals/
+/rounds/
 
 # API keys
 .env

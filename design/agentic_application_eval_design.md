@@ -298,12 +298,12 @@ accumulate noise round over round or application over application.
 ```markdown
 # Preferences
 
-- Prioritize the evaluation-philosophy argument (context-adaptive validation)
-  as the intellectual centerpiece — it is the strongest, most original idea.
-- Do not overclaim sole ownership of collaborative work. Frame the Kiribati
-  AI work as close vendor collaboration + implementation/capability
-  evaluation, not formal model validation — this is factually accurate and
-  should never be reverted.
+- Prioritize argument X as the intellectual centerpiece of the essay — it
+  is the strongest, most original idea in the material gathered so far.
+- Do not overclaim sole ownership of collaborative work. Frame project Y
+  as close collaboration with named partners, not solo execution — this
+  is factually accurate and should never be reverted (see README
+  "Background" for why this constraint exists).
 - Voice: plain, declarative sentences. Avoid stacking more than one
   "big idea" in a closing paragraph.
 ```
@@ -485,45 +485,45 @@ shows what actually needs to be shared vs. per-application.
 
 ```
 repo/
-├── input/                       # gitignored — raw human-provided material
+├── input/                       # gitignored — human-provided material
 │   ├── job_posting.md           # required — pasted verbatim by Jeremy
 │   ├── current_cv.{docx,pdf,md} # required — whichever format is on hand
 │   ├── essay_response.md        # required — Jeremy's free-written response
 │   ├── external_resources.md    # optional — list of URLs, one per line
 │   ├── external_refs/           # optional — raw files (PDFs etc.)
 │   └── past_drafts/
-├── jd_itemised.md
-├── jd_components.json
-├── form_itemised.md
-├── form_questions.json
-├── external_references.md
-├── tagged_context.json
-├── tagged_context.md            # auto-rendered, for review only
-├── interview_report.md
-├── preferences.md
-├── voice_profile.md
-├── cv_tailored.md
-├── cv_tailoring_notes.json
-├── drafts/
+├── jd_itemised.md                # gitignored — generated, real-run data
+├── jd_components.json            # gitignored
+├── form_itemised.md              # gitignored
+├── form_questions.json           # gitignored
+├── external_references.md        # gitignored
+├── tagged_context.json           # gitignored
+├── tagged_context.md             # gitignored — auto-rendered, for review only
+├── interview_report.md           # gitignored
+├── preferences.md                # gitignored
+├── voice_profile.md              # gitignored
+├── cv_tailored.md                # gitignored
+├── cv_tailoring_notes.json       # gitignored
+├── drafts/                       # gitignored
 │   ├── gen1/
 │   │   ├── v01/
 │   │   │   ├── q_why_anthropic.md
 │   │   │   └── v01.meta.json
 │   │   └── ...
 │   └── gen2/
-├── evals/
+├── evals/                        # gitignored
 │   ├── gen1/
 │   │   ├── v01_judge_skeptical.json
 │   │   ├── v01_judge_warm.json
 │   │   ├── summary.json
 │   │   └── summary.md
 │   └── gen2/
-├── rounds/
+├── rounds/                       # gitignored
 │   ├── gen1/
 │   │   └── direction.md
 │   └── gen2/
 │       └── round_config.json
-├── scripts/
+├── scripts/                      # committed
 │   ├── decompose_jd.py          # Stage 1: itemize input/job_posting.md, decompose
 │   ├── decompose_form.py        # Stage 2: same treatment for the form fields
 │   ├── ingest_references.py     # Stage 4
@@ -535,23 +535,28 @@ repo/
 │   ├── run_judges.py
 │   ├── aggregate.py
 │   └── plan_next_gen.py
-├── README.md                     # required/optional inputs, how to run each stage
+├── README.md                     # committed
 └── .gitignore
 ```
 
-Everything under `input/` is human-provided and stays gitignored, full
-stop — this is a simpler rule than an earlier version of this design that
-split "public JD text" from "private personal text" within the raw-source
-layer itself. Now the line is just: raw input (private, in `input/`) vs.
-generated artifact (public, at repo root). `jd_itemised.md`,
-`jd_components.json`, `form_itemised.md`, `form_questions.json`, and
-`external_references.md` are all generated from `input/` files and are
-intended to be public, part of the audit trail.
+**Only code and documentation are public here.** Everything under
+`input/`, and everything the pipeline generates from it for a real run,
+stays gitignored — not just the human-provided raw material. An earlier
+version of this design drew the line at "raw input is private, generated
+artifact is public," on the reasoning that generated files like
+`jd_components.json` just reproduce public posting text. That missed
+that most of what actually gets generated — draft essay text, judge
+scores and critiques, the tailored CV — *is* the application's substance
+and strategy, not just a repackaging of public information, and
+shouldn't be sitting in a public repo regardless of whether any single
+field in it counts as "personal data." See README.md ("Background") for
+why this project is public at all, given that constraint.
 
-Git-trackable and diffable across generations by design — `git diff
-drafts/gen1/v01/q_why_anthropic.md drafts/gen2/v01/q_why_anthropic.md`
-watches the essay evolve, and `git log evals/` gives an audit trail of how
-scores moved.
+The `genN` structure is still diffable across generations even though
+none of it is committed — `git diff --no-index drafts/gen1/v01/q_why_anthropic.md
+drafts/gen2/v01/q_why_anthropic.md` works fine on untracked files and
+watches the essay evolve; `evals/genN/summary.md` across generations gives
+the same audit trail `git log` would, just read by hand instead.
 
 ---
 
@@ -573,22 +578,21 @@ default starting assumption.
 
 ## 5. Notes carried over, worth encoding directly into the repo
 
-- The corrected, accurate framing of the Kiribati work (no formal model
-  validation/calibration; close vendor collaboration + implementation/
-  capability evaluation) is encoded in `preferences.md` as a hard
-  constraint, not just a note — this was a real overclaim that made it
-  through several manual generations before being caught, and is exactly
-  why `overclaim_risk` now uses one shared rubric across both the essay
-  (judge-scored) and the CV (`claims_checklist`, Stage 9).
-- The single most-praised idea across the manual 9-eval run
-  (context-adaptive validation / political-fragility spectrum / data
-  sovereignty) maps to a specific `resp_theory_of_change` JD component so
-  the pipeline can verify it's preserved across variants, rather than
-  trusting it survives by default.
+- A real overclaim made it through several manual drafting rounds during
+  the original pilot before being caught — a claim of more direct/solo
+  ownership over a piece of collaborative work than was accurate (see
+  README "Background" for the actual story; deliberately not repeated
+  here, since this document describes general pipeline behavior, not one
+  application's specific content). That near-miss is why `overclaim_risk`
+  is a permanent, shared-rubric score across both the essay (judge-scored)
+  and the CV (`claims_checklist`, Stage 9), not a one-off note — the
+  underlying failure mode (drafts drifting toward overstating ownership
+  under iterative refinement) is general and likely to recur for any
+  application, not specific to one project.
 - Keep `overclaim_risk` and a role/mission-specificity score as permanent
   cross-cutting judge scores regardless of which JD this pipeline is later
-  pointed at — both were the highest-value findings from the manual
-  process and are likely to generalize beyond this one role.
+  pointed at — both were the highest-value findings from the original
+  pilot and are likely to generalize beyond any one role.
 - Build `voice_profile.md` (Stage 8) only from corrected source text —
   proofread drafts and any additional writing samples Jeremy supplies,
   never raw dictated/transcribed originals. Several fixes applied earlier
@@ -615,8 +619,8 @@ default starting assumption.
   favor of a direct human paste (removes the fetch-fidelity risk entirely)
   plus a human glance at the itemization (cheaper and at least as reliable
   as a second agent call, since Jeremy already has the source open). The
-  first real run of this stage (against the actual Anthropic posting, before
-  this simplification) caught genuine omissions this way — a dropped
-  location line, a few ellipsis-truncated clauses — so the checkpoint
-  itself is worth keeping even though the fetch/agent-verify mechanism
-  around it wasn't.
+  first real run of this stage (against a live JD posting, before this
+  simplification) caught genuine omissions this way — a dropped location
+  line, a few ellipsis-truncated clauses — so the checkpoint itself is
+  worth keeping even though the fetch/agent-verify mechanism around it
+  wasn't.
