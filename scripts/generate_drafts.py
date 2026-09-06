@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, parse_json, read_json, read_text, write_json, write_text
+from _common import INPUT, OUTPUT, call, parse_json, read_json, read_text, write_json, write_text
 
 AXES = [
     {"structural_lead": "narrative", "emphasis": "balanced"},
@@ -52,7 +52,7 @@ def load_optional(path: Path, default=""):
 
 
 def build_round_config(gen: int) -> dict:
-    config_path = ROOT / "rounds" / f"gen{gen}" / "round_config.json"
+    config_path = OUTPUT / "rounds" / f"gen{gen}" / "round_config.json"
     if config_path.exists():
         return read_json(config_path)
     return {"mode": "exploration", "variant_count": 8, "carried_forward_commentary": None,
@@ -71,17 +71,17 @@ def main():
     gen = int(sys.argv[sys.argv.index("--gen") + 1])
 
     config = build_round_config(gen)
-    components = read_json(ROOT / "jd_components.json")
-    questions = read_json(ROOT / "form_questions.json")
-    tagged = read_json(ROOT / "tagged_context.json")
-    interview = load_optional(ROOT / "interview_report.md", "(none)")
-    references = load_optional(ROOT / "external_references.md", "(none)")
-    preferences = load_optional(ROOT / "preferences.md", "(none)")
-    voice_profile = load_optional(ROOT / "voice_profile.md", "(no voice profile yet -- write naturally)")
+    components = read_json(OUTPUT / "jd_components.json")
+    questions = read_json(OUTPUT / "form_questions.json")
+    tagged = read_json(OUTPUT / "tagged_context.json")
+    interview = load_optional(OUTPUT / "interview_report.md", "(none)")
+    references = load_optional(OUTPUT / "external_references.md", "(none)")
+    preferences = load_optional(INPUT / "preferences.md", "(none)")
+    voice_profile = load_optional(OUTPUT / "voice_profile.md", "(no voice profile yet -- write naturally)")
 
     direction = "(none -- this is generation 1)"
     if config.get("carried_forward_commentary"):
-        direction_path = ROOT / config["carried_forward_commentary"]
+        direction_path = OUTPUT / config["carried_forward_commentary"]
         if direction_path.exists():
             direction = read_text(direction_path)
     if config.get("retain_verbatim") or config.get("drop"):
@@ -107,11 +107,11 @@ def main():
         axis = {"mode": "convergence"} if mode == "convergence" else AXES[i % len(AXES)]
         answers = generate_variant(user_context, axis)
 
-        variant_dir = ROOT / "drafts" / f"gen{gen}" / variant_id
+        variant_dir = OUTPUT / "drafts" / f"gen{gen}" / variant_id
         for question_id, text in answers.items():
             write_text(variant_dir / f"{question_id}.md", text)
         write_json(variant_dir / f"{variant_id}.meta.json", {"axis": axis})
-        print(f"  wrote drafts/gen{gen}/{variant_id}/")
+        print(f"  wrote output/drafts/gen{gen}/{variant_id}/")
 
 
 if __name__ == "__main__":

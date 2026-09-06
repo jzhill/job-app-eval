@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, read_cv_text, read_json, read_text, write_text
+from _common import OUTPUT, call, read_cv_text, read_json, read_text, write_text
 
 BRIEF_TEMPLATE = """You are conducting a reflective interview with a job
 candidate, out loud, in conversation (they may be driving or walking, so
@@ -63,8 +63,8 @@ Output only the markdown, no preamble."""
 
 
 def write_brief():
-    components = read_json(ROOT / "jd_components.json")
-    tagged_path = ROOT / "tagged_context.json"
+    components = read_json(OUTPUT / "jd_components.json")
+    tagged_path = OUTPUT / "tagged_context.json"
     gaps = read_json(tagged_path).get("coverage_gaps", []) if tagged_path.exists() else []
     cv = read_cv_text()
 
@@ -73,8 +73,8 @@ def write_brief():
         coverage_gaps=gaps or "(no specific gaps flagged)",
         cv=cv,
     )
-    write_text(ROOT / "interview_brief.md", brief)
-    print("Wrote interview_brief.md.")
+    write_text(OUTPUT / "interview_brief.md", brief)
+    print("Wrote output/interview_brief.md.")
     print("Paste this into Claude/Gemini/ChatGPT's voice mode and have the conversation.")
     print("Then run: python scripts/interview.py --ingest <path to what it gave you back>")
 
@@ -82,8 +82,8 @@ def write_brief():
 def ingest(transcript_path: str):
     transcript = read_text(Path(transcript_path))
     result = call(INGEST_SYSTEM, transcript, temperature=0.0)
-    write_text(ROOT / "interview_report.md", result)
-    print("Wrote interview_report.md.")
+    write_text(OUTPUT / "interview_report.md", result)
+    print("Wrote output/interview_report.md.")
 
 
 if __name__ == "__main__":

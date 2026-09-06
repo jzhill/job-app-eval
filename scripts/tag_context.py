@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, parse_json, read_json, read_text, require_input, write_json, write_text
+from _common import OUTPUT, call, parse_json, read_json, read_text, require_input, write_json, write_text
 
 SYSTEM = """You map fragments of source text onto a job description's
 components and an application form's questions.
@@ -71,10 +71,10 @@ def render_markdown(tagged: dict, components: dict) -> str:
 
 def main():
     essay = read_text(require_input("essay_response.md"))
-    refs_path = ROOT / "external_references.md"
+    refs_path = OUTPUT / "external_references.md"
     refs = read_text(refs_path) if refs_path.exists() else "(none)"
-    components = read_json(ROOT / "jd_components.json")
-    questions = read_json(ROOT / "form_questions.json")
+    components = read_json(OUTPUT / "jd_components.json")
+    questions = read_json(OUTPUT / "form_questions.json")
 
     user = (
         f"## JD components\n{components}\n\n"
@@ -84,11 +84,11 @@ def main():
     )
     result = call(SYSTEM, user, temperature=0.0, max_tokens=8192)
     tagged = parse_json(result)
-    write_json(ROOT / "tagged_context.json", tagged)
-    write_text(ROOT / "tagged_context.md", render_markdown(tagged, components))
+    write_json(OUTPUT / "tagged_context.json", tagged)
+    write_text(OUTPUT / "tagged_context.md", render_markdown(tagged, components))
 
     low_confidence = [f for f in tagged["fragments"] if f["confidence"] == "low"]
-    print("Wrote tagged_context.json and tagged_context.md.")
+    print("Wrote output/tagged_context.json and output/tagged_context.md.")
     if low_confidence:
         print(f"{len(low_confidence)} low-confidence mapping(s) -- review these first:")
         for fragment in low_confidence:

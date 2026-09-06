@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, parse_json, read_cv_text, read_json, read_text, write_json, write_text
+from _common import INPUT, OUTPUT, call, parse_json, read_cv_text, read_json, read_text, write_json, write_text
 
 SYSTEM = """You tailor a CV for a specific job, in one pass.
 
@@ -34,10 +34,10 @@ known overclaim pattern -- do not include)."""
 
 
 def main():
-    components = read_json(ROOT / "jd_components.json")
-    tagged = read_json(ROOT / "tagged_context.json")
+    components = read_json(OUTPUT / "jd_components.json")
+    tagged = read_json(OUTPUT / "tagged_context.json")
     cv_text = read_cv_text()
-    preferences_path = ROOT / "preferences.md"
+    preferences_path = INPUT / "preferences.md"
     preferences = read_text(preferences_path) if preferences_path.exists() else "(none)"
 
     user = (
@@ -49,10 +49,10 @@ def main():
     result = call(SYSTEM, user, temperature=0.3, max_tokens=8192)
     data = parse_json(result)
 
-    write_text(ROOT / "cv_tailored.md", data.pop("cv_tailored"))
-    write_json(ROOT / "cv_tailoring_notes.json", data)
+    write_text(OUTPUT / "cv_tailored.md", data.pop("cv_tailored"))
+    write_json(OUTPUT / "cv_tailoring_notes.json", data)
 
-    print("Wrote cv_tailored.md and cv_tailoring_notes.json.")
+    print("Wrote output/cv_tailored.md and output/cv_tailoring_notes.json.")
     flagged = [c for c in data["claims_checklist"] if c["overclaim_risk"]["score"] >= 4]
     if flagged:
         print(f"{len(flagged)} claim(s) flagged high overclaim risk -- review before using:")

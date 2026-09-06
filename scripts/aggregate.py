@@ -13,7 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, read_json, write_json, write_text
+from _common import OUTPUT, call, gen_dir, read_json, write_json, write_text
 
 SYNTHESIZE_SYSTEM = """You're given numeric scores and comments from
 multiple judges across multiple variants of a job application. Identify
@@ -25,7 +25,7 @@ patterns that aren't really there -- if nothing clearly recurs, say so."""
 
 
 def load_evals(gen: int):
-    evals_dir = ROOT / "evals" / f"gen{gen}"
+    evals_dir = gen_dir("evals", gen)
     records = []
     for path in sorted(evals_dir.glob("v*_judge_*.json")):
         records.append(read_json(path))
@@ -36,7 +36,7 @@ SECTION_BY_COMPONENT = {}
 
 
 def load_section_map():
-    components = read_json(ROOT / "jd_components.json")
+    components = read_json(OUTPUT / "jd_components.json")
     for section, items in components.items():
         if isinstance(items, list):
             for item in items:
@@ -50,7 +50,7 @@ def main():
 
     records = load_evals(gen)
     if not records:
-        raise SystemExit(f"No evals found in evals/gen{gen}/ -- run run_judges.py first.")
+        raise SystemExit(f"No evals found in output/evals/gen{gen}/ -- run run_judges.py first.")
     load_section_map()
 
     by_variant = defaultdict(list)
@@ -91,7 +91,7 @@ def main():
 
     ranked = sorted(variant_summaries.items(), key=lambda kv: -kv[1]["mean_overall_score"])
     summary_json = {"variants": dict(ranked)}
-    write_json(ROOT / "evals" / f"gen{gen}" / "summary.json", summary_json)
+    write_json(gen_dir("evals", gen) / "summary.json", summary_json)
 
     all_comments = [
         {"variant_id": r["variant_id"], "judge_id": r["judge_id"],
@@ -106,9 +106,9 @@ def main():
         lines.append(f"- **{variant_id}**: {data['mean_overall_score']}/5")
     lines.append("\n## Recurring findings across judges\n")
     lines.append(recurring)
-    write_text(ROOT / "evals" / f"gen{gen}" / "summary.md", "\n".join(lines))
+    write_text(gen_dir("evals", gen) / "summary.md", "\n".join(lines))
 
-    print(f"Wrote evals/gen{gen}/summary.json and summary.md.")
+    print(f"Wrote output/evals/gen{gen}/summary.json and summary.md.")
     print(f"Top variant: {top[0][0]} ({top[0][1]['mean_overall_score']}/5)")
 
 

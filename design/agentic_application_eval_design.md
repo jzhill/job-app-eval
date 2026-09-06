@@ -45,20 +45,20 @@ The pipeline drafts and scores; it does not decide alone.
 ## 2. Pipeline stages
 
 ```
-1.  JD Decomposition            → (from input/job_posting.md) jd_itemised.md → jd_components.json
-2.  Form Decomposition          → (from input/job_posting.md) form_itemised.md → form_questions.json
+1.  JD Decomposition            → (from input/job_posting.md) output/jd_itemised.md → output/jd_components.json
+2.  Form Decomposition          → (from input/job_posting.md) output/form_itemised.md → output/form_questions.json
 3.  Essay Response Capture      → (Jeremy writes input/essay_response.md directly)
-4.  External Reference Ingestion → external_references.md
-5.  Context Mapping             → tagged_context.json (+ tagged_context.md)
-6.  Reflective Interview        → interview_report.md
-7.  Preferences File            → preferences.md
-8.  Voice Profiling             → voice_profile.md
-9.  CV Tailoring                → cv_tailored.md + cv_tailoring_notes.json
-10. Draft Generation            → drafts/genN/vXX/q<question_id>.md + vXX.meta.json
-11. Judge Panel Evaluation      → evals/genN/vXX_<judge>.json
-12. Aggregation                 → evals/genN/summary.json + summary.md
-13. Human Sniff Check           → rounds/genN/direction.md (manual, not scripted)
-14. Directed Iteration          → rounds/gen(N+1)/round_config.json
+4.  External Reference Ingestion → output/external_references.md
+5.  Context Mapping             → output/tagged_context.json (+ output/tagged_context.md)
+6.  Reflective Interview        → output/interview_report.md
+7.  Preferences File            → (Jeremy writes input/preferences.md directly)
+8.  Voice Profiling             → output/voice_profile.md
+9.  CV Tailoring                → output/cv_tailored.md + output/cv_tailoring_notes.json
+10. Draft Generation            → output/drafts/genN/vXX/q<question_id>.md + vXX.meta.json
+11. Judge Panel Evaluation      → output/evals/genN/vXX_<judge>.json
+12. Aggregation                 → output/evals/genN/summary.json + summary.md
+13. Human Sniff Check           → output/rounds/genN/direction.md (manual, not scripted)
+14. Directed Iteration          → output/rounds/gen(N+1)/round_config.json
 ```
 
 Each stage is a separate script/module, callable independently, so you can
@@ -82,11 +82,11 @@ in that path at all. Simplicity first.
 numbered list of items — every distinct requirement, responsibility,
 sentence, or bullet gets its own item, grouped under whatever section
 headers the source page itself used. This is a structural pass only; it is
-not yet the four-category semantic pass below. Output: `jd_itemised.md`.
+not yet the four-category semantic pass below. Output: `output/jd_itemised.md`.
 
-**Step 1b — Human verification.** Jeremy checks `jd_itemised.md` against
-the actual posting (which he has open, having just pasted from it) and
-confirms nothing was dropped, paraphrased, or invented, or kicks back
+**Step 1b — Human verification.** Jeremy checks `output/jd_itemised.md`
+against the actual posting (which he has open, having just pasted from it)
+and confirms nothing was dropped, paraphrased, or invented, or kicks back
 specific items for correction. This replaces an earlier version of this
 design that used a second automated agent call for this check — a human
 glancing at a page he already has open is at least as reliable and costs
@@ -96,11 +96,11 @@ bullet, and since every downstream score in this pipeline traces back to
 `jd_components.json`, an unfaithful itemization poisons everything after
 it — this is why the checkpoint still exists, just cheaper now.
 
-**Step 1c — Semantic decomposition.** The verified `jd_itemised.md` is
-decomposed into `jd_components.json`, which sorts everything into four
-categories — required qualifications, preferred qualifications, core
-responsibilities, and mission signals — with each item keeping a short id
-and the exact text it came from. (Exact file shape:
+**Step 1c — Semantic decomposition.** The verified `output/jd_itemised.md`
+is decomposed into `output/jd_components.json`, which sorts everything
+into four categories — required qualifications, preferred qualifications,
+core responsibilities, and mission signals — with each item keeping a
+short id and the exact text it came from. (Exact file shape:
 [`data_schemas.md`](data_schemas.md#jd_componentsjson).)
 
 **Reviewed and hand-edited by Jeremy** — a wrong or sloppy decomposition
@@ -114,30 +114,30 @@ the section-level rollup in Stage 12 (Aggregation).
 ### Stage 2 — Form Decomposition
 
 **Input:** the same `input/job_posting.md` as Stage 1 in the common case —
-many ATS platforms (Greenhouse included; confirmed against the real
-Anthropic posting) render the job description and the application form's
-fields on one page, so one paste covers both. If an employer's form truly
-lives on a separate page, Jeremy pastes that into `input/job_posting.md`
-as well (append, don't create a second file — one human-provided source
-per application keeps the input contract simple).
+many ATS platforms (Greenhouse included; confirmed against a real posting)
+render the job description and the application form's fields on one page,
+so one paste covers both. If an employer's form truly lives on a separate
+page, Jeremy pastes that into `input/job_posting.md` as well (append,
+don't create a second file — one human-provided source per application
+keeps the input contract simple).
 
-**Step 2a — Itemization** → `form_itemised.md` — every field/question
-captured as its own item, with whatever prompt text and stated limit
-appear on the source page. Same approach as Stage 1a.
+**Step 2a — Itemization** → `output/form_itemised.md` — every
+field/question captured as its own item, with whatever prompt text and
+stated limit appear on the source page. Same approach as Stage 1a.
 
 **Step 2b — Human verification** → same as Stage 1b: Jeremy checks
-`form_itemised.md` against the actual form.
+`output/form_itemised.md` against the actual form.
 
-**Step 2c — Structural decomposition** → `form_questions.json`, purely
-structural facts about the form itself: each question gets an id, its
-exact prompt text, any stated word/character limit, and whether it's
+**Step 2c — Structural decomposition** → `output/form_questions.json`,
+purely structural facts about the form itself: each question gets an id,
+its exact prompt text, any stated word/character limit, and whether it's
 required. Deliberately does **not** pre-assign JD components to a
 question; that mapping happens at generation time (Stage 10), not here.
 (Exact file shape: [`data_schemas.md`](data_schemas.md#form_questionsjson).)
 
 A generated draft references its question by file location, not an
-embedded field: `drafts/genN/vXX/q_why_anthropic.md`. This keeps the
-reference unambiguous and lets Stages 11–12 glob by question id.
+embedded field: `output/drafts/genN/vXX/q_why_anthropic.md`. This keeps
+the reference unambiguous and lets Stages 11–12 glob by question id.
 
 ---
 
@@ -171,7 +171,7 @@ from Jeremy on why he flagged it. Even without an explicit note, the fact
 Jeremy selected a given resource is itself signal about what he finds
 relevant or compelling.
 
-**Output:** `external_references.md` — one entry per resource:
+**Output:** `output/external_references.md` — one entry per resource:
 
 ```markdown
 ## Beneficial Deployments — Gates Foundation partnership announcement
@@ -200,17 +200,17 @@ material).
 
 ### Stage 5 — Context Mapping
 
-**Input:** `input/essay_response.md`, `external_references.md`,
-`jd_components.json`, `form_questions.json`.
+**Input:** `input/essay_response.md`, `output/external_references.md`,
+`output/jd_components.json`, `output/form_questions.json`.
 
-**Output:** `tagged_context.json` — the canonical, machine-generated
+**Output:** `output/tagged_context.json` — the canonical, machine-generated
 mapping of fragments onto JD components and (once available) form
 questions, with a confidence field per fragment and an `origin` field
 distinguishing personal material from external reference material. A
-`tagged_context.md` rendering (grouped by JD component, in the same visual
-shape the original hand-tagged file used) is auto-generated purely for the
-human checkpoint — Jeremy never edits it directly; he approves it or kicks
-back specific fragments for correction.
+`output/tagged_context.md` rendering (grouped by JD component, in the same
+visual shape the original hand-tagged file used) is auto-generated purely
+for the human checkpoint — Jeremy never edits it directly; he approves it
+or kicks back specific fragments for correction.
 
 Each fragment records: the source text itself, which JD components and
 form questions it supports, how confident the mapping is, and where it
@@ -246,17 +246,17 @@ draft (e.g. the political-fragility spectrum and data-sovereignty argument
 from the original Anthropic process).
 
 **Input:** the interviewing agent needs full context to ask genuinely
-relevant, non-generic questions — the JD, `jd_components.json`,
-`tagged_context.json` (including coverage gaps and external-reference
-fragments, as hints toward under-explored territory, not a script to
-follow), and the CV.
+relevant, non-generic questions — the JD, `output/jd_components.json`,
+`output/tagged_context.json` (including coverage gaps and
+external-reference fragments, as hints toward under-explored territory,
+not a script to follow), and the CV.
 
-**Output:** `interview_report.md` — an organized, annotated write-up of the
-exchange (not a raw transcript), with a clearly separated section of
-verbatim quotes or passages flagged as particularly compelling — candidates
-for direct, unaltered reuse in later drafts. This feeds forward as its own
-first-class input to Stage 10, distinct from `tagged_context.json` — it is
-not merged back into the tagged-context file.
+**Output:** `output/interview_report.md` — an organized, annotated
+write-up of the exchange (not a raw transcript), with a clearly separated
+section of verbatim quotes or passages flagged as particularly compelling
+— candidates for direct, unaltered reuse in later drafts. This feeds
+forward as its own first-class input to Stage 10, distinct from
+`tagged_context.json` — it is not merged back into the tagged-context file.
 
 **Open note:** whether these verbatim quotes count as "corrected" text for
 Stage 8's sourcing rule, or need a light grammar pass first (they may
@@ -275,25 +275,29 @@ conduct the conversation itself. It has two jobs:
 1. **Generate a portable interview brief** — a self-contained prompt
    (since the external session starts with zero context, same reasoning as
    the original handover doc) bundling the JD, the relevant
-   `jd_components.json` entries, `tagged_context.json`'s coverage gaps, CV
-   highlights, and explicit instructions on interview style (curious,
+   `output/jd_components.json` entries, `output/tagged_context.json`'s
+   coverage gaps, CV highlights, and explicit instructions on interview
+   style (curious,
    thoughtful, not rote Q&A) and the exact output shape wanted back
    (organized report + a separated verbatim-quotes section). Jeremy copies
    this into Claude/Gemini/ChatGPT's voice mode and has the actual
    conversation there.
-2. **Ingest the pasted-back result** into `interview_report.md`, normalizing
-   whatever shape the external agent returned into the schema above.
+2. **Ingest the pasted-back result** into `output/interview_report.md`,
+   normalizing whatever shape the external agent returned into the schema
+   above.
 
 ---
 
 ### Stage 7 — Preferences File
 
-Unchanged in spirit from the original design: not *facts about Jeremy*, but
-*how he wants the pipeline to weight things*. Kept distinct from context so
-it's easy to update without touching the factual record, and kept
-**durable across rounds** — per-round tactical notes belong in
-`rounds/genN/direction.md` (Stage 13), not here, so this file doesn't
-accumulate noise round over round or application over application.
+**Input/Output:** Jeremy writes directly into `input/preferences.md` —
+human-authored, like `essay_response.md`, not generated by a script. Not
+*facts about Jeremy*, but *how he wants the pipeline to weight things*.
+Kept distinct from context so it's easy to update without touching the
+factual record, and kept **durable across rounds** — per-round tactical
+notes belong in `output/rounds/genN/direction.md` (Stage 13), not here, so
+this file doesn't accumulate noise round over round or application over
+application.
 
 ```markdown
 # Preferences
@@ -317,8 +321,9 @@ loop) over corrected source text only — proofread past drafts and any
 additional writing samples, **never** raw dictated/transcribed originals,
 since transcription artifacts (subject-verb agreement, dropped words,
 broken parallelism) risk being encoded as "voice" if the profiling pass
-runs on unfiltered text. Output: `voice_profile.md`, a fixed input to every
-Stage 10 generation call, not regenerated per variant or per round.
+runs on unfiltered text. Output: `output/voice_profile.md`, a fixed input
+to every Stage 10 generation call, not regenerated per variant or per
+round.
 
 **Guardrail for the judge panel:** a distinct, low-weight `style_fidelity`
 check (see Stage 11), separate from content-quality scores, catches drift
@@ -335,16 +340,17 @@ defeats the purpose of producing genuine variations.
 
 **New stage** — the CV was previously static input context only.
 
-**Input:** `jd_components.json`, `tagged_context.json`, `input/current_cv.*`,
-`preferences.md`.
+**Input:** `output/jd_components.json`, `output/tagged_context.json`,
+`input/current_cv.*`, `input/preferences.md`.
 
-**Output:** `cv_tailored.md` (reordered/re-emphasized bullets and summary,
-same section structure as the source CV) and `cv_tailoring_notes.json` —
-a record of what changed and why, plus a claims checklist: every factual
-claim in the tailored CV is traced back to a specific context fragment
-(`origin: essay_response` or an interview-derived fragment only — never
-`origin: external_reference`, per Stage 5), or flagged if it can't be
-traced. (Exact file shape: [`data_schemas.md`](data_schemas.md#cv_tailoring_notesjson).)
+**Output:** `output/cv_tailored.md` (reordered/re-emphasized bullets and
+summary, same section structure as the source CV) and
+`output/cv_tailoring_notes.json` — a record of what changed and why, plus
+a claims checklist: every factual claim in the tailored CV is traced back
+to a specific context fragment (`origin: essay_response` or an
+interview-derived fragment only — never `origin: external_reference`, per
+Stage 5), or flagged if it can't be traced. (Exact file shape:
+[`data_schemas.md`](data_schemas.md#cv_tailoring_notesjson).)
 
 **Deliberately single-pass, not a variant tournament.** CVs are
 factual/structured and lower voice-sensitivity than an essay, so the
@@ -358,13 +364,14 @@ audit trail across both artifacts.
 
 ### Stage 10 — Draft Generation
 
-**Input:** `jd_components.json`, `tagged_context.json`,
-`interview_report.md`, `external_references.md`, `form_questions.json`,
-`preferences.md`, `voice_profile.md`, and the current round's
-`rounds/genN/round_config.json` (mode + variant count + carried-forward
-direction from the prior round, if any — see Stage 14).
+**Input:** `output/jd_components.json`, `output/tagged_context.json`,
+`output/interview_report.md`, `output/external_references.md`,
+`output/form_questions.json`, `input/preferences.md`,
+`output/voice_profile.md`, and the current round's
+`output/rounds/genN/round_config.json` (mode + variant count +
+carried-forward direction from the prior round, if any — see Stage 14).
 
-**Output:** `drafts/genN/vXX/q<question_id>.md` per question, plus
+**Output:** `output/drafts/genN/vXX/q<question_id>.md` per question, plus
 `vXX.meta.json` recording the axis combination that produced it.
 
 **Generalized from one essay to N questions.** `form_questions.json` may
@@ -397,7 +404,8 @@ tailored CV): a score and comment for every JD component, a score and
 comment for every form question, an evaluation of the CV, a low-weight
 style-fidelity check kept separate from content scoring, and an overall
 score, outcome, and comment for the whole package. (Exact file shape:
-[`data_schemas.md`](data_schemas.md#judge-record).)
+[`data_schemas.md`](data_schemas.md#judge-record).) Written to
+`output/evals/genN/vXX_<judge>.json`.
 
 `component_scores` stays **granular** (per individual JD-component id, not
 just per section) — this is still what drives Stage 14's decision about
@@ -418,17 +426,18 @@ for at least one judge to reduce self-preference bias.
 
 ### Stage 12 — Aggregation
 
-`aggregate.py` reads all `evals/genN/*.json`, produces:
+`aggregate.py` reads all `output/evals/genN/*.json`, produces:
 
-- **`summary.json`** — mean/variance of each component score per variant
-  (granular, per-component), **plus a section-level rollup** (grouped by
-  `required_qualifications` / `preferred_qualifications` /
-  `core_responsibilities` / `mission_signals`) for a quick read, plus
-  per-question score rollups and CV-evaluation consensus.
-- **`summary.md`** — human-readable: top 2–3 variants by aggregate score,
-  **plus the qualitative comments that recur across ≥2 judges** — the
-  numeric score tells you *that* something's wrong, the recurring comment
-  tells you *what*.
+- **`output/evals/genN/summary.json`** — mean/variance of each component
+  score per variant (granular, per-component), **plus a section-level
+  rollup** (grouped by `required_qualifications` /
+  `preferred_qualifications` / `core_responsibilities` /
+  `mission_signals`) for a quick read, plus per-question score rollups and
+  CV-evaluation consensus.
+- **`output/evals/genN/summary.md`** — human-readable: top 2–3 variants by
+  aggregate score, **plus the qualitative comments that recur across ≥2
+  judges** — the numeric score tells you *that* something's wrong, the
+  recurring comment tells you *what*.
 
 Same structure as the manual 9-eval synthesis this whole pipeline
 automates: not just counting outcomes, but reading across all judges and
@@ -444,9 +453,9 @@ judge panel can't do on its own (e.g. the calibration/validation overclaim
 that no eval agent flagged unprompted, earlier in the manual process).
 
 **Expanded from the original design:** this checkpoint now also produces
-`rounds/genN/direction.md` — freeform commentary, plus explicitly retained
-phrases or points (from Jeremy's own original response or from any
-variation), plus his explicit choice of mode for the next round:
+`output/rounds/genN/direction.md` — freeform commentary, plus explicitly
+retained phrases or points (from Jeremy's own original response or from
+any variation), plus his explicit choice of mode for the next round:
 
 ```markdown
 ---
@@ -464,11 +473,12 @@ framing exactly as-is, this is load-bearing for the overclaim correction.
 ### Stage 14 — Directed Iteration
 
 **Not a fully automatic genetic/mutation loop.** The orchestrator reads
-`rounds/genN/direction.md` + `summary.md` + `preferences.md` and produces
-`rounds/gen(N+1)/round_config.json` — recording the finalized mode and
-variant count for the next round, a pointer back to the direction file it
-was built from, and explicit lists of phrases to retain verbatim or drop.
-(Exact file shape: [`data_schemas.md`](data_schemas.md#round_configjson).)
+`output/rounds/genN/direction.md` + `output/evals/genN/summary.md` +
+`input/preferences.md` and produces
+`output/rounds/gen(N+1)/round_config.json` — recording the finalized mode
+and variant count for the next round, a pointer back to the direction file
+it was built from, and explicit lists of phrases to retain verbatim or
+drop. (Exact file shape: [`data_schemas.md`](data_schemas.md#round_configjson).)
 
 Jeremy approves or adjusts before the next generation runs. Automatic
 mutation without a human step is a reasonable future feature once the
@@ -485,44 +495,46 @@ shows what actually needs to be shared vs. per-application.
 
 ```
 repo/
-├── input/                       # gitignored — human-provided material
-│   ├── job_posting.md           # required — pasted verbatim by Jeremy
-│   ├── current_cv.{docx,pdf,md} # required — whichever format is on hand
-│   ├── essay_response.md        # required — Jeremy's free-written response
-│   ├── external_resources.md    # optional — list of URLs, one per line
-│   ├── external_refs/           # optional — raw files (PDFs etc.)
+├── input/                        # gitignored — human-provided material
+│   ├── job_posting.md            # required — pasted verbatim by Jeremy
+│   ├── current_cv.{docx,pdf,md}  # required — whichever format is on hand
+│   ├── essay_response.md         # required — Jeremy's free-written response
+│   ├── preferences.md            # optional — how to weight things, human-authored
+│   ├── external_resources.md     # optional — list of URLs, one per line
+│   ├── external_refs/            # optional — raw files (PDFs etc.)
 │   └── past_drafts/
-├── jd_itemised.md                # gitignored — generated, real-run data
-├── jd_components.json            # gitignored
-├── form_itemised.md              # gitignored
-├── form_questions.json           # gitignored
-├── external_references.md        # gitignored
-├── tagged_context.json           # gitignored
-├── tagged_context.md             # gitignored — auto-rendered, for review only
-├── interview_report.md           # gitignored
-├── preferences.md                # gitignored
-├── voice_profile.md              # gitignored
-├── cv_tailored.md                # gitignored
-├── cv_tailoring_notes.json       # gitignored
-├── drafts/                       # gitignored
-│   ├── gen1/
-│   │   ├── v01/
-│   │   │   ├── q_why_anthropic.md
-│   │   │   └── v01.meta.json
-│   │   └── ...
-│   └── gen2/
-├── evals/                        # gitignored
-│   ├── gen1/
-│   │   ├── v01_judge_skeptical.json
-│   │   ├── v01_judge_warm.json
-│   │   ├── summary.json
-│   │   └── summary.md
-│   └── gen2/
-├── rounds/                       # gitignored
-│   ├── gen1/
-│   │   └── direction.md
-│   └── gen2/
-│       └── round_config.json
+├── output/                       # gitignored — everything the pipeline generates
+│   ├── jd_itemised.md
+│   ├── jd_components.json
+│   ├── form_itemised.md
+│   ├── form_questions.json
+│   ├── external_references.md
+│   ├── tagged_context.json
+│   ├── tagged_context.md         # auto-rendered, for review only
+│   ├── interview_brief.md
+│   ├── interview_report.md
+│   ├── voice_profile.md
+│   ├── cv_tailored.md
+│   ├── cv_tailoring_notes.json
+│   ├── drafts/
+│   │   ├── gen1/
+│   │   │   ├── v01/
+│   │   │   │   ├── q_why_anthropic.md
+│   │   │   │   └── v01.meta.json
+│   │   │   └── ...
+│   │   └── gen2/
+│   ├── evals/
+│   │   ├── gen1/
+│   │   │   ├── v01_judge_skeptical.json
+│   │   │   ├── v01_judge_warm.json
+│   │   │   ├── summary.json
+│   │   │   └── summary.md
+│   │   └── gen2/
+│   └── rounds/
+│       ├── gen1/
+│       │   └── direction.md
+│       └── gen2/
+│           └── round_config.json
 ├── scripts/                      # committed
 │   ├── decompose_jd.py          # Stage 1: itemize input/job_posting.md, decompose
 │   ├── decompose_form.py        # Stage 2: same treatment for the form fields
@@ -539,24 +551,29 @@ repo/
 └── .gitignore
 ```
 
-**Only code and documentation are public here.** Everything under
-`input/`, and everything the pipeline generates from it for a real run,
-stays gitignored — not just the human-provided raw material. An earlier
-version of this design drew the line at "raw input is private, generated
-artifact is public," on the reasoning that generated files like
-`jd_components.json` just reproduce public posting text. That missed
-that most of what actually gets generated — draft essay text, judge
-scores and critiques, the tailored CV — *is* the application's substance
-and strategy, not just a repackaging of public information, and
+**Only code and documentation are public here.** `input/` and `output/`
+are both gitignored, full stop — not just the human-provided raw
+material. An earlier version of this design drew the line at "raw input
+is private, generated artifact is public," on the reasoning that
+generated files like `jd_components.json` just reproduce public posting
+text. That missed that most of what actually gets generated — draft essay
+text, judge scores and critiques, the tailored CV — *is* the application's
+substance and strategy, not just a repackaging of public information, and
 shouldn't be sitting in a public repo regardless of whether any single
 field in it counts as "personal data." See README.md ("Background") for
 why this project is public at all, given that constraint.
 
-The `genN` structure is still diffable across generations even though
-none of it is committed — `git diff --no-index drafts/gen1/v01/q_why_anthropic.md
-drafts/gen2/v01/q_why_anthropic.md` works fine on untracked files and
-watches the essay evolve; `evals/genN/summary.md` across generations gives
-the same audit trail `git log` would, just read by hand instead.
+`preferences.md` lives in `input/`, not `output/`, despite being a named
+pipeline "stage" (Stage 7) — it's human-authored, like
+`essay_response.md`, not machine-generated.
+
+The `genN` structure under `output/` is still diffable across generations
+even though none of it is committed — `git diff --no-index
+output/drafts/gen1/v01/q_why_anthropic.md
+output/drafts/gen2/v01/q_why_anthropic.md` works fine on untracked files
+and watches the essay evolve; `output/evals/genN/summary.md` across
+generations gives the same audit trail `git log` would, just read by hand
+instead.
 
 ---
 
@@ -593,15 +610,16 @@ default starting assumption.
   cross-cutting judge scores regardless of which JD this pipeline is later
   pointed at — both were the highest-value findings from the original
   pilot and are likely to generalize beyond any one role.
-- Build `voice_profile.md` (Stage 8) only from corrected source text —
-  proofread drafts and any additional writing samples Jeremy supplies,
-  never raw dictated/transcribed originals. Several fixes applied earlier
-  in the manual process (subject-verb agreement, dropped words, broken
-  parallelism) were transcription artifacts, not style, and should not be
-  encoded into the profile as if they were. **Open question:** whether
-  `interview_report.md`'s verbatim quotes (Stage 6) count as "corrected"
-  for this rule, or need a light grammar pass first — unresolved, decide
-  before Stage 8 is implemented against real interview output.
+- Build `output/voice_profile.md` (Stage 8) only from corrected source
+  text — proofread drafts and any additional writing samples Jeremy
+  supplies, never raw dictated/transcribed originals. Several fixes
+  applied earlier in the manual process (subject-verb agreement, dropped
+  words, broken parallelism) were transcription artifacts, not style, and
+  should not be encoded into the profile as if they were. **Open
+  question:** whether `output/interview_report.md`'s verbatim quotes
+  (Stage 6) count as "corrected" for this rule, or need a light grammar
+  pass first — unresolved, decide before Stage 8 is implemented against
+  real interview output.
 - Treat style-matching as a one-time distillation applied at generation
   time, not an iterative optimization target — an iterative "regenerate
   until style score is high" loop tends to converge toward near-verbatim

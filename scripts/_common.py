@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 INPUT = ROOT / "input"
+OUTPUT = ROOT / "output"
 
 load_dotenv(ROOT / ".env")
 
@@ -92,4 +93,4 @@ def read_cv_text() -> str:
 
 
 def gen_dir(base: str, gen: int) -> Path:
-    return ROOT / base / f"gen{gen}"
+    return OUTPUT / base / f"gen{gen}"

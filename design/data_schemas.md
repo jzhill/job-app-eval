@@ -101,7 +101,7 @@ the essay and CV paths.
 ## Judge record
 
 Produced by Stage 11. One file per (variant, judge):
-`evals/genN/vXX_<judge>.json`.
+`output/evals/genN/vXX_<judge>.json`.
 
 ```json
 {

@@ -14,7 +14,7 @@ from pathlib import Path
 import frontmatter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, parse_json, read_text, write_json
+from _common import call, gen_dir, parse_json, read_text, write_json
 
 SYSTEM = """You read a candidate's freeform notes after reviewing a round
 of application drafts, and extract two lists from the prose: specific
@@ -29,9 +29,9 @@ def main():
         raise SystemExit("Usage: python scripts/plan_next_gen.py --gen <N>")
     gen = int(sys.argv[sys.argv.index("--gen") + 1])
 
-    direction_path = ROOT / "rounds" / f"gen{gen}" / "direction.md"
+    direction_path = gen_dir("rounds", gen) / "direction.md"
     if not direction_path.exists():
-        raise SystemExit(f"rounds/gen{gen}/direction.md not found -- do the sniff check first.")
+        raise SystemExit(f"output/rounds/gen{gen}/direction.md not found -- do the sniff check first.")
 
     post = frontmatter.loads(read_text(direction_path))
     mode = post.get("next_mode", "exploration")
@@ -46,8 +46,8 @@ def main():
         "retain_verbatim": extracted["retain_verbatim"],
         "drop": extracted["drop"],
     }
-    write_json(ROOT / "rounds" / f"gen{gen + 1}" / "round_config.json", config)
-    print(f"Wrote rounds/gen{gen + 1}/round_config.json ({mode}, {variant_count} variant(s)).")
+    write_json(gen_dir("rounds", gen + 1) / "round_config.json", config)
+    print(f"Wrote output/rounds/gen{gen + 1}/round_config.json ({mode}, {variant_count} variant(s)).")
     print("Review before running generate_drafts.py for the next round.")
 
 

@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import INPUT, ROOT, call, write_text
+from _common import INPUT, OUTPUT, call, write_text
 
 SYSTEM = """Analyze the writing samples below and describe the author's
 voice as a set of named characteristics an editor could apply -- not
@@ -33,8 +33,8 @@ def main():
         samples.append(f"## {path.name}\n{path.read_text(encoding='utf-8')}")
 
     result = call(SYSTEM, "\n\n".join(samples), temperature=0.0)
-    write_text(ROOT / "voice_profile.md", result)
-    print("Wrote voice_profile.md.")
+    write_text(OUTPUT / "voice_profile.md", result)
+    print("Wrote output/voice_profile.md.")
 
 
 if __name__ == "__main__":

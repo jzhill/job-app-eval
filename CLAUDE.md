@@ -17,15 +17,15 @@ that they just reproduced public posting text, which missed that draft
 essay text, judge scores/critiques, and the tailored CV are the
 application's actual substance and strategy, not public information.
 
-- `input/` is **gitignored, never committed.** Everything human-provided:
-  `job_posting.md`, `current_cv.*`, `essay_response.md`, and optionally
-  `external_resources.md`/`external_refs/`/`past_drafts/` — see README.md
-  for the exact required/optional files.
-- **Everything the pipeline generates from a real run is also gitignored**
-  — `jd_components.json`, `form_questions.json`, `tagged_context.json`,
-  `preferences.md`, `voice_profile.md`, `drafts/`, `evals/`, `rounds/`,
-  all of it. None of it gets committed. If you're ever about to `git add`
-  one of these, stop — check `.gitignore` covers it, don't assume.
+- `input/` and `output/` are **both gitignored, never committed** — the
+  whole rule fits in one line: `input/` is what Jeremy provides
+  (`job_posting.md`, `current_cv.*`, `essay_response.md`, optionally
+  `preferences.md`/`external_resources.md`/`external_refs/`/
+  `past_drafts/`); `output/` is everything the pipeline generates from it
+  (decomposed JD/form, tagged context, drafts, judge evals, everything).
+  See README.md for the exact required/optional input files. If you're
+  ever about to `git add` a file under either directory, stop — check
+  `.gitignore` covers it, don't assume.
 
 ## Core principle (from the design doc)
 

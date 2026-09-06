@@ -1,16 +1,16 @@
 """Stage 1: JD Decomposition.
 
-Default: itemize input/job_posting.md -> jd_itemised.md, then stop.
-Review jd_itemised.md against the actual posting yourself before continuing.
+Default: itemize input/job_posting.md -> output/jd_itemised.md, then stop.
+Review output/jd_itemised.md against the actual posting before continuing.
 
---decompose: read the (reviewed) jd_itemised.md -> jd_components.json.
+--decompose: read the (reviewed) jd_itemised.md -> output/jd_components.json.
 """
 
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, parse_json, read_text, require_input, write_json, write_text
+from _common import OUTPUT, call, parse_json, read_text, require_input, write_json, write_text
 
 ITEMIZE_SYSTEM = """You itemize a job posting into a numbered list, verbatim.
 Break the text into a discrete, numbered list of items -- every distinct
@@ -35,20 +35,20 @@ with exactly those four keys, each a list of {"id": "<short_snake_case_id>",
 def itemize():
     posting = read_text(require_input("job_posting.md"))
     result = call(ITEMIZE_SYSTEM, posting, temperature=0.0)
-    write_text(ROOT / "jd_itemised.md", result)
-    print("Wrote jd_itemised.md.")
+    write_text(OUTPUT / "jd_itemised.md", result)
+    print("Wrote output/jd_itemised.md.")
     print("Review it against the actual posting before running --decompose.")
 
 
 def decompose():
-    itemised_path = ROOT / "jd_itemised.md"
+    itemised_path = OUTPUT / "jd_itemised.md"
     if not itemised_path.exists():
-        raise SystemExit("jd_itemised.md not found -- run without --decompose first.")
+        raise SystemExit("output/jd_itemised.md not found -- run without --decompose first.")
     itemised = read_text(itemised_path)
     result = call(DECOMPOSE_SYSTEM, itemised, temperature=0.0)
     components = parse_json(result)
-    write_json(ROOT / "jd_components.json", components)
-    print("Wrote jd_components.json. Review and hand-edit before proceeding --")
+    write_json(OUTPUT / "jd_components.json", components)
+    print("Wrote output/jd_components.json. Review and hand-edit before proceeding --")
     print("a wrong or sloppy decomposition poisons every downstream score.")
 
 

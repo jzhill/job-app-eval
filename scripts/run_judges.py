@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, call, parse_json, read_json, read_text, write_json
+from _common import OUTPUT, call, gen_dir, parse_json, read_json, read_text, write_json
 
 JUDGES = [
     {"id": "judge_skeptical_senior",
@@ -46,20 +46,20 @@ def main():
         raise SystemExit("Usage: python scripts/run_judges.py --gen <N>")
     gen = int(sys.argv[sys.argv.index("--gen") + 1])
 
-    config_path = ROOT / "rounds" / f"gen{gen}" / "round_config.json"
+    config_path = gen_dir("rounds", gen) / "round_config.json"
     if config_path.exists() and read_json(config_path)["mode"] == "convergence":
         print(f"gen{gen} is a convergence round -- no judge panel runs.")
         return
 
-    components = read_json(ROOT / "jd_components.json")
-    questions = read_json(ROOT / "form_questions.json")
-    cv_path = ROOT / "cv_tailored.md"
+    components = read_json(OUTPUT / "jd_components.json")
+    questions = read_json(OUTPUT / "form_questions.json")
+    cv_path = OUTPUT / "cv_tailored.md"
     cv_text = read_text(cv_path) if cv_path.exists() else "(no tailored CV yet)"
 
-    gen_dir = ROOT / "drafts" / f"gen{gen}"
-    variant_dirs = sorted(p for p in gen_dir.iterdir() if p.is_dir())
+    drafts_dir = gen_dir("drafts", gen)
+    variant_dirs = sorted(p for p in drafts_dir.iterdir() if p.is_dir())
 
-    evals_dir = ROOT / "evals" / f"gen{gen}"
+    evals_dir = gen_dir("evals", gen)
     for variant_dir in variant_dirs:
         variant_id = variant_dir.name
         answers = {

@@ -44,13 +44,12 @@ kind of judgment the role is looking for.
    console.anthropic.com: `ANTHROPIC_API_KEY=sk-ant-...`. `.env` is
    gitignored and loaded automatically by every script — never commit it,
    never put the key anywhere else in the repo.
-3. Only code and documentation are public here. `input/` is gitignored —
-   nothing you put there is committed — and so is everything the pipeline
-   generates from it for a real run (itemised JD/form, decomposed
-   components, drafts, evals, everything under `drafts/`/`evals/`/
-   `rounds/`). Draft text and judge scores are the application's actual
-   substance, not just a repackaging of public information, so none of it
-   belongs in a public repo.
+3. Only code and documentation are public here. `input/` and `output/`
+   are both gitignored, full stop — nothing in either gets committed.
+   `input/` is what you provide; `output/` is everything the pipeline
+   generates from it. Draft text and judge scores are the application's
+   actual substance, not just a repackaging of public information, so
+   none of it belongs in a public repo.
 
 ## Required inputs (place in `input/`)
 
@@ -60,55 +59,60 @@ kind of judgment the role is looking for.
 | `current_cv.docx` / `.pdf` / `.md` | Your current CV, whichever format you already have. |
 | `essay_response.md` | Write freely — your own words on why this role, relevant experience, motivation. No structure required, no need to address specific requirements one by one; just write toward the posting loosely. The pipeline maps this onto the posting's actual requirements for you. |
 
-## Optional inputs
+## Optional inputs (also in `input/`)
 
 | File/folder | What it is |
 |---|---|
+| `preferences.md` | How you want the pipeline to weight things — not facts about you, priorities (e.g. "prioritize argument X", hard constraints that must never be reverted). |
 | `external_resources.md` | A list of URLs (articles, org pages, reports) you find relevant background, one per line, with an optional note on why. |
 | `external_refs/` | Any files (PDFs etc.) that serve the same purpose. |
 | `past_drafts/` | Prior application drafts, if you have any — used to build a voice profile of your writing style. |
 
+Everything the pipeline generates lands in `output/`, mirroring this same
+gitignored treatment — see the design doc §3 for the full layout.
+
 ## How the JD/form intake checkpoint works
 
 `scripts/decompose_jd.py` and `scripts/decompose_form.py` break
-`job_posting.md` into a numbered, itemised list (`jd_itemised.md` /
-`form_itemised.md`) before decomposing it further. **After running these,
-check the itemised file against the actual posting yourself** — you'll
-already have it open, since you just pasted from it. Confirm nothing was
-dropped or altered, or fix the specific item. This is a cheap but real
-checkpoint: an LLM asked to itemise a posting can quietly compress or drop
-a line, and everything downstream scores against this file.
+`input/job_posting.md` into a numbered, itemised list
+(`output/jd_itemised.md` / `output/form_itemised.md`) before decomposing
+it further. **After running these, check the itemised file against the
+actual posting yourself** — you'll already have it open, since you just
+pasted from it. Confirm nothing was dropped or altered, or fix the
+specific item. This is a cheap but real checkpoint: an LLM asked to
+itemise a posting can quietly compress or drop a line, and everything
+downstream scores against this file.
 
 ## Running the pipeline
 
 Once the required inputs are in place:
 
 ```
-python scripts/decompose_jd.py                  # writes jd_itemised.md -- review it
-python scripts/decompose_jd.py --decompose       # writes jd_components.json -- review/edit it
+python scripts/decompose_jd.py                  # writes output/jd_itemised.md -- review it
+python scripts/decompose_jd.py --decompose       # writes output/jd_components.json -- review/edit it
 
-python scripts/decompose_form.py                 # writes form_itemised.md -- review it
-python scripts/decompose_form.py --decompose      # writes form_questions.json
+python scripts/decompose_form.py                 # writes output/form_itemised.md -- review it
+python scripts/decompose_form.py --decompose      # writes output/form_questions.json
 
-python scripts/ingest_references.py               # optional, writes external_references.md
+python scripts/ingest_references.py               # optional, writes output/external_references.md
 
-python scripts/tag_context.py                     # writes tagged_context.json/.md -- review it,
+python scripts/tag_context.py                     # writes output/tagged_context.json/.md -- review it,
                                                     # especially anything flagged low-confidence
 
-python scripts/interview.py                        # writes interview_brief.md -- paste into a
+python scripts/interview.py                        # writes output/interview_brief.md -- paste into a
                                                     # voice-mode app (Claude/Gemini/ChatGPT),
                                                     # have the conversation, save what it gives you
-python scripts/interview.py --ingest <path>        # writes interview_report.md from that output
+python scripts/interview.py --ingest <path>        # writes output/interview_report.md from that output
 
 python scripts/build_voice_profile.py              # optional, needs input/past_drafts/*.md
-python scripts/tailor_cv.py                        # writes cv_tailored.md + cv_tailoring_notes.json
+python scripts/tailor_cv.py                        # writes output/cv_tailored.md + cv_tailoring_notes.json
 
-python scripts/generate_drafts.py --gen 1          # writes drafts/gen1/vNN/
-python scripts/run_judges.py --gen 1               # writes evals/gen1/ (skipped in convergence rounds)
-python scripts/aggregate.py --gen 1                # writes evals/gen1/summary.md -- read this yourself
+python scripts/generate_drafts.py --gen 1          # writes output/drafts/gen1/vNN/
+python scripts/run_judges.py --gen 1               # writes output/evals/gen1/ (skipped in convergence rounds)
+python scripts/aggregate.py --gen 1                # writes output/evals/gen1/summary.md -- read this yourself
 
-# write rounds/gen1/direction.md yourself (see design doc §Stage 13), then:
-python scripts/plan_next_gen.py --gen 1            # writes rounds/gen2/round_config.json
+# write output/rounds/gen1/direction.md yourself (see design doc §Stage 13), then:
+python scripts/plan_next_gen.py --gen 1            # writes output/rounds/gen2/round_config.json
 python scripts/generate_drafts.py --gen 2          # next round, repeat
 ```
 

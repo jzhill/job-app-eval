@@ -2,8 +2,9 @@
 
 Reads input/external_resources.md (list of URLs, one per line, optional
 trailing note) and files in input/external_refs/, produces a short digest
-of each in external_references.md. Optional stage -- writes an (empty)
-external_references.md either way, so downstream stages always find it.
+of each in output/external_references.md. Optional stage -- writes an
+(empty) external_references.md either way, so downstream stages always
+find it.
 """
 
 import sys
@@ -13,7 +14,7 @@ import requests
 from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import INPUT, ROOT, call, write_text
+from _common import INPUT, OUTPUT, call, write_text
 
 SUMMARIZE_SYSTEM = """Summarize this source in 2-4 sentences: what it's
 about and the key facts/claims relevant to a job application. Be concise
@@ -81,8 +82,8 @@ def main():
             lines.append(f"Why flagged: {note}")
         lines.append("")
 
-    write_text(ROOT / "external_references.md", "\n".join(lines))
-    print(f"Wrote external_references.md ({len(entries)} entries).")
+    write_text(OUTPUT / "external_references.md", "\n".join(lines))
+    print(f"Wrote output/external_references.md ({len(entries)} entries).")
 
 
 if __name__ == "__main__":
