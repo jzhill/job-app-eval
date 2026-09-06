@@ -61,7 +61,7 @@ def build_round_config(gen: int) -> dict:
 
 def generate_variant(user_context: str, axis: dict) -> dict:
     user = f"{user_context}\n\n## Axis for this variant\n{axis}\n"
-    result = call(SYSTEM, user, temperature=0.9, max_tokens=4096)
+    result = call(SYSTEM, user, max_tokens=4096)
     return parse_json(result)
 
 

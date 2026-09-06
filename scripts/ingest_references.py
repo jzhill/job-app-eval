@@ -60,7 +60,7 @@ def main():
         except Exception as exc:
             print(f"  skipped ({exc})")
             continue
-        summary = call(SUMMARIZE_SYSTEM, raw[:20000], temperature=0.0)
+        summary = call(SUMMARIZE_SYSTEM, raw[:20000])
         entries.append((url, url, summary, note))
 
     refs_dir = INPUT / "external_refs"
@@ -70,7 +70,7 @@ def main():
                 continue
             print(f"Reading {path.name} ...")
             raw = read_pdf_text(path)
-            summary = call(SUMMARIZE_SYSTEM, raw[:20000], temperature=0.0)
+            summary = call(SUMMARIZE_SYSTEM, raw[:20000])
             entries.append((path.name, path.name, summary, ""))
 
     lines = ["# External References\n"]

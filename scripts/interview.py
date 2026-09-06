@@ -81,7 +81,7 @@ def write_brief():
 
 def ingest(transcript_path: str):
     transcript = read_text(Path(transcript_path))
-    result = call(INGEST_SYSTEM, transcript, temperature=0.0)
+    result = call(INGEST_SYSTEM, transcript, effort="high")
     write_text(OUTPUT / "interview_report.md", result)
     print("Wrote output/interview_report.md.")
 

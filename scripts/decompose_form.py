@@ -40,7 +40,7 @@ or null if no limit is stated, "required": true|false}]}."""
 
 def itemize():
     posting = read_text(require_input("job_posting.md"))
-    result = call(ITEMIZE_SYSTEM, posting, temperature=0.0)
+    result = call(ITEMIZE_SYSTEM, posting, effort="high")
     write_text(OUTPUT / "form_itemised.md", result)
     print("Wrote output/form_itemised.md.")
     print("Review it against the actual form before running --decompose.")
@@ -51,7 +51,7 @@ def decompose():
     if not itemised_path.exists():
         raise SystemExit("output/form_itemised.md not found -- run without --decompose first.")
     itemised = read_text(itemised_path)
-    result = call(DECOMPOSE_SYSTEM, itemised, temperature=0.0)
+    result = call(DECOMPOSE_SYSTEM, itemised, effort="high")
     questions = parse_json(result)
     write_json(OUTPUT / "form_questions.json", questions)
     print("Wrote output/form_questions.json.")

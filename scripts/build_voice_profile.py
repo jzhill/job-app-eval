@@ -32,7 +32,7 @@ def main():
     for path in sorted(drafts_dir.glob("*.md")):
         samples.append(f"## {path.name}\n{path.read_text(encoding='utf-8')}")
 
-    result = call(SYSTEM, "\n\n".join(samples), temperature=0.0)
+    result = call(SYSTEM, "\n\n".join(samples), effort="high")
     write_text(OUTPUT / "voice_profile.md", result)
     print("Wrote output/voice_profile.md.")
 

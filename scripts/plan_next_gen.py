@@ -37,7 +37,7 @@ def main():
     mode = post.get("next_mode", "exploration")
     variant_count = post.get("next_variant_count") or 8
 
-    extracted = parse_json(call(SYSTEM, post.content, temperature=0.0))
+    extracted = parse_json(call(SYSTEM, post.content, effort="high"))
 
     config = {
         "mode": mode,
