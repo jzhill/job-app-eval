@@ -16,7 +16,7 @@ voice-mode apps. Instead:
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # scripts/_common.py, one level up from deprecated/
 from _common import OUTPUT, call, read_cv_text, read_json, read_text, write_text
 
 BRIEF_TEMPLATE = """You are conducting a reflective interview with a job

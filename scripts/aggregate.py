@@ -1,10 +1,14 @@
-"""Stage 12: Aggregation.
+"""Stage 12: Aggregation (numeric half only).
 
 Usage: python scripts/aggregate.py --gen 1
 
-Numeric rollups computed directly (no LLM needed for arithmetic); the
-qualitative "what recurs across judges" synthesis uses one LLM call,
-mirroring the manual 9-eval synthesis this pipeline automates.
+Computes the mean/variance rollups directly -- no LLM needed for
+arithmetic, no Anthropic API key required. Writes summary.json and the
+numeric-ranking half of summary.md. The qualitative "what recurs across
+judges" synthesis is done by the agent, in-context, reading the eval files
+directly -- see design doc Stage 12. This script used to make an LLM call
+for that synthesis too; that moved in-context along with every other
+non-Stage-11 stage.
 """
 
 import statistics
@@ -13,15 +17,33 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import OUTPUT, call, gen_dir, read_json, write_json, write_text
+from _common import OUTPUT, gen_dir, read_json, read_text, write_json, write_text
 
-SYNTHESIZE_SYSTEM = """You're given numeric scores and comments from
-multiple judges across multiple variants of a job application. Identify
-qualitative comments that recur across 2 or more judges (possibly on
-different variants) -- these are the highest-value findings, since a
-numeric score tells you something's wrong but a recurring comment tells
-you what. Output a short markdown list, most-repeated first. Don't invent
-patterns that aren't really there -- if nothing clearly recurs, say so."""
+RECURRING_HEADING = "## Recurring findings across judges"
+RECURRING_PLACEHOLDER = (
+    f"{RECURRING_HEADING}\n\n"
+    "*(agent: fill this in by reading output/evals/gen{gen}/v*_judge_*.json "
+    "directly and pulling out comments that recur across >=2 judges -- "
+    "see design doc Stage 12)*"
+)
+
+
+def existing_recurring_section(gen: int) -> str | None:
+    """Return a prior summary.md's '## Recurring findings' section if the
+    agent already replaced the placeholder with real synthesis -- so
+    rerunning this script (e.g. after a late/corrected judge eval file)
+    doesn't clobber that in-context work back to the placeholder."""
+    path = gen_dir("evals", gen) / "summary.md"
+    if not path.exists():
+        return None
+    text = read_text(path)
+    idx = text.find(RECURRING_HEADING)
+    if idx == -1:
+        return None
+    section = text[idx:].rstrip("\n")
+    if section == RECURRING_PLACEHOLDER.format(gen=gen):
+        return None
+    return section
 
 
 def load_evals(gen: int):
@@ -93,23 +115,21 @@ def main():
     summary_json = {"variants": dict(ranked)}
     write_json(gen_dir("evals", gen) / "summary.json", summary_json)
 
-    all_comments = [
-        {"variant_id": r["variant_id"], "judge_id": r["judge_id"],
-         "overall_candidate_feedback": r["overall_candidate_feedback"]}
-        for r in records
-    ]
-    recurring = call(SYNTHESIZE_SYSTEM, str(all_comments), effort="high")
+    preserved = existing_recurring_section(gen)
 
     top = ranked[:3]
     lines = [f"# Summary — gen{gen}\n", "## Top variants\n"]
     for variant_id, data in top:
         lines.append(f"- **{variant_id}**: {data['mean_overall_score']}/5")
-    lines.append("\n## Recurring findings across judges\n")
-    lines.append(recurring)
+    lines.append("\n" + (preserved if preserved else RECURRING_PLACEHOLDER.format(gen=gen)))
     write_text(gen_dir("evals", gen) / "summary.md", "\n".join(lines))
 
     print(f"Wrote output/evals/gen{gen}/summary.json and summary.md.")
     print(f"Top variant: {top[0][0]} ({top[0][1]['mean_overall_score']}/5)")
+    if preserved:
+        print("Preserved existing recurring-findings synthesis from prior summary.md.")
+    else:
+        print("Numeric rollup only -- add the recurring-findings synthesis in-context, per design doc Stage 12.")
 
 
 if __name__ == "__main__":

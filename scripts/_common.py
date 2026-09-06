@@ -28,7 +28,7 @@ def get_client() -> anthropic.Anthropic:
 
 
 def call(system: str, user: str, model: str = DEFAULT_MODEL,
-         effort: str | None = None, max_tokens: int = 4096) -> str:
+         effort: str | None = None, max_tokens: int = 16000) -> str:
     """effort: None (SDK default) or one of "low"/"medium"/"high"/"xhigh"/"max".
     The Messages API has no temperature/top_p/top_k/seed parameter -- effort
     (via output_config) is the only sampling-behavior knob it now exposes."""
@@ -77,6 +77,10 @@ def require_input(name: str) -> Path:
 
 
 def find_cv_path() -> Path:
+    """Legacy helper for the superseded scripts/tailor_cv.py and
+    scripts/interview.py (single-CV-file era, before input/cv/ was a
+    folder) -- kept as-is since those scripts are kept as-is. New code
+    should use read_doc_text() against a specific path in input/cv/."""
     for ext in (".docx", ".pdf", ".md", ".txt"):
         candidate = INPUT / f"current_cv{ext}"
         if candidate.exists():
@@ -85,7 +89,13 @@ def find_cv_path() -> Path:
 
 
 def read_cv_text() -> str:
-    path = find_cv_path()
+    """Legacy helper -- see find_cv_path()."""
+    return read_doc_text(find_cv_path())
+
+
+def read_doc_text(path: Path) -> str:
+    """Extract plain text from a .docx/.pdf/.md/.txt file at any path --
+    e.g. a specific CV version under input/cv/."""
     if path.suffix == ".docx":
         import docx
         doc = docx.Document(path)

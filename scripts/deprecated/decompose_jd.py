@@ -9,7 +9,7 @@ Review output/jd_itemised.md against the actual posting before continuing.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # scripts/_common.py, one level up from deprecated/
 from _common import OUTPUT, call, parse_json, read_text, require_input, write_json, write_text
 
 ITEMIZE_SYSTEM = """You itemize a job posting into a numbered list, verbatim.

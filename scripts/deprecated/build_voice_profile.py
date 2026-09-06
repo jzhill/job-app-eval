@@ -10,7 +10,7 @@ if Jeremy supplies substantial new source material.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # scripts/_common.py, one level up from deprecated/
 from _common import INPUT, OUTPUT, call, write_text
 
 SYSTEM = """Analyze the writing samples below and describe the author's

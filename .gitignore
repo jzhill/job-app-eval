@@ -230,3 +230,9 @@ __marimo__/
 # API keys
 .env
 *.key
+
+# Claude Code local runtime state -- not project content. .claude/skills/
+# (e.g. run-cycle) is committed normally; these are session-local scratch
+# space that shouldn't follow the repo to another machine or clone.
+.claude/worktrees/
+.claude/scheduled_tasks.lock

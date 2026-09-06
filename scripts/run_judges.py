@@ -77,7 +77,7 @@ def main():
         )
         for judge in JUDGES:
             system = SYSTEM_TEMPLATE.format(persona=judge["persona"])
-            result = call(system, user, model=judge["model"], effort="high", max_tokens=4096)
+            result = call(system, user, model=judge["model"], effort="high", max_tokens=16000)
             record = parse_json(result)
             record["variant_id"] = variant_id
             record["judge_id"] = judge["id"]

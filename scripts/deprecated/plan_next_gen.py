@@ -13,7 +13,7 @@ from pathlib import Path
 
 import frontmatter
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # scripts/_common.py, one level up from deprecated/
 from _common import call, gen_dir, parse_json, read_text, write_json
 
 SYSTEM = """You read a candidate's freeform notes after reviewing a round

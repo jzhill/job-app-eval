@@ -8,7 +8,7 @@ directly via a claims_checklist rather than explored stylistically.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # scripts/_common.py, one level up from deprecated/
 from _common import INPUT, OUTPUT, call, parse_json, read_cv_text, read_json, read_text, write_json, write_text
 
 SYSTEM = """You tailor a CV for a specific job, in one pass.

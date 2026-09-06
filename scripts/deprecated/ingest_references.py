@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # scripts/_common.py, one level up from deprecated/
 from _common import INPUT, OUTPUT, call, write_text
 
 SUMMARIZE_SYSTEM = """Summarize this source in 2-4 sentences: what it's
