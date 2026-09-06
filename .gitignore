@@ -216,3 +216,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# All pipeline data stays private -- never committed to this public repo.
+# Only code and documentation are public here. input/ (human-provided:
+# CV, essay draft, job posting) and output/ (everything the pipeline
+# generates: draft text, judge scores, decomposed JD/form) both reveal
+# application content/strategy that shouldn't be public, not just
+# personal identifying details. See project CLAUDE.md and README.md
+# ("Background") for why.
+/input/
+/output/
+
+# API keys
+.env
+*.key

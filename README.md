@@ -1,2 +1,120 @@
 # job-app-eval
-Meta-job application, with agentic evaluation
+
+Meta-job application, with agentic evaluation. A pipeline that drafts and
+evaluates job-application text (essay questions + tailored CV) against a
+specific job posting, using a multi-judge LLM panel. Full design:
+[`design/agentic_application_eval_design.md`](design/agentic_application_eval_design.md).
+
+## Background
+
+This started as a manual pilot for one specific application (Anthropic's
+Partner Manager, Global Health role): drafting a "Why this role" essay by
+hand across several revisions, then running each version through a naive
+LLM acting as an HR screener to see what an outside reader would flag.
+Nine separate runs later, a clear, consistent pattern of findings emerged
+across all of them — evidence that the naive-screener approach was
+surfacing real signal, not noise from one run's phrasing.
+
+That manual process also caught something more consequential than
+polish: an early draft overstated the candidate's role in a piece of
+past technical work — a mistake the writer hadn't noticed himself, and
+one an LLM drafting agent could easily reintroduce during later revision
+if nothing was checking for it. That near-miss is the direct reason this
+pipeline treats overclaim risk as a first-class, permanent judge score
+(see the design doc) rather than something to catch by eye each time.
+
+The manual process worked, but it didn't scale — nine ad hoc runs,
+read and synthesized by hand, is a lot of overhead for one application,
+and the whole point of doing this well is to apply what worked to future
+applications too. This repo formalizes that manual workflow into a
+repeatable pipeline: decompose the job posting into scoreable components,
+draft against them, evaluate with a diverse judge panel instead of one
+screener, and aggregate the findings automatically. There's also a
+second, more pointed reason to build it well: a tool that evaluates and
+improves an application for an AI safety company, built using careful,
+skeptical evaluation methodology, is itself a small demonstration of the
+kind of judgment the role is looking for.
+
+## Setup
+
+1. `python -m venv .venv` then `.venv/Scripts/activate` (Windows) or
+   `source .venv/bin/activate` (Mac/Linux), then
+   `pip install -r requirements.txt`.
+2. Copy `.env.example` to `.env` and fill in your key from
+   console.anthropic.com: `ANTHROPIC_API_KEY=sk-ant-...`. `.env` is
+   gitignored and loaded automatically by every script — never commit it,
+   never put the key anywhere else in the repo.
+3. Only code and documentation are public here. `input/` and `output/`
+   are both gitignored, full stop — nothing in either gets committed.
+   `input/` is what you provide; `output/` is everything the pipeline
+   generates from it. Draft text and judge scores are the application's
+   actual substance, not just a repackaging of public information, so
+   none of it belongs in a public repo.
+
+## Required inputs (place in `input/`)
+
+| File | What it is |
+|---|---|
+| `job_posting.md` | Copy-paste the **raw text of the job posting**, straight from the browser. If the application form's fields are on the same page (common on Greenhouse and similar ATS platforms), paste those too — one file covers both. |
+| `current_cv.docx` / `.pdf` / `.md` | Your current CV, whichever format you already have. |
+| `essay_response.md` | Write freely — your own words on why this role, relevant experience, motivation. No structure required, no need to address specific requirements one by one; just write toward the posting loosely. The pipeline maps this onto the posting's actual requirements for you. |
+
+## Optional inputs (also in `input/`)
+
+| File/folder | What it is |
+|---|---|
+| `preferences.md` | How you want the pipeline to weight things — not facts about you, priorities (e.g. "prioritize argument X", hard constraints that must never be reverted). |
+| `external_resources.md` | A list of URLs (articles, org pages, reports) you find relevant background, one per line, with an optional note on why. |
+| `external_refs/` | Any files (PDFs etc.) that serve the same purpose. |
+| `past_drafts/` | Prior application drafts, if you have any — used to build a voice profile of your writing style. |
+
+Everything the pipeline generates lands in `output/`, mirroring this same
+gitignored treatment — see the design doc §3 for the full layout.
+
+## How the JD/form intake checkpoint works
+
+`scripts/decompose_jd.py` and `scripts/decompose_form.py` break
+`input/job_posting.md` into a numbered, itemised list
+(`output/jd_itemised.md` / `output/form_itemised.md`) before decomposing
+it further. **After running these, check the itemised file against the
+actual posting yourself** — you'll already have it open, since you just
+pasted from it. Confirm nothing was dropped or altered, or fix the
+specific item. This is a cheap but real checkpoint: an LLM asked to
+itemise a posting can quietly compress or drop a line, and everything
+downstream scores against this file.
+
+## Running the pipeline
+
+Once the required inputs are in place:
+
+```
+python scripts/decompose_jd.py                  # writes output/jd_itemised.md -- review it
+python scripts/decompose_jd.py --decompose       # writes output/jd_components.json -- review/edit it
+
+python scripts/decompose_form.py                 # writes output/form_itemised.md -- review it
+python scripts/decompose_form.py --decompose      # writes output/form_questions.json
+
+python scripts/ingest_references.py               # optional, writes output/external_references.md
+
+python scripts/tag_context.py                     # writes output/tagged_context.json/.md -- review it,
+                                                    # especially anything flagged low-confidence
+
+python scripts/interview.py                        # writes output/interview_brief.md -- paste into a
+                                                    # voice-mode app (Claude/Gemini/ChatGPT),
+                                                    # have the conversation, save what it gives you
+python scripts/interview.py --ingest <path>        # writes output/interview_report.md from that output
+
+python scripts/build_voice_profile.py              # optional, needs input/past_drafts/*.md
+python scripts/tailor_cv.py                        # writes output/cv_tailored.md + cv_tailoring_notes.json
+
+python scripts/generate_drafts.py --gen 1          # writes output/drafts/gen1/vNN/
+python scripts/run_judges.py --gen 1               # writes output/evals/gen1/ (skipped in convergence rounds)
+python scripts/aggregate.py --gen 1                # writes output/evals/gen1/summary.md -- read this yourself
+
+# write output/rounds/gen1/direction.md yourself (see design doc §Stage 13), then:
+python scripts/plan_next_gen.py --gen 1            # writes output/rounds/gen2/round_config.json
+python scripts/generate_drafts.py --gen 2          # next round, repeat
+```
+
+See the design doc for the full pipeline (14 stages) and what each script
+produces.
