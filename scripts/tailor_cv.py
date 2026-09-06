@@ -46,7 +46,7 @@ def main():
         f"## Preferences / hard constraints\n{preferences}\n\n"
         f"## Current CV\n{cv_text}\n"
     )
-    result = call(SYSTEM, user, temperature=0.3, max_tokens=8192)
+    result = call(SYSTEM, user, effort="high", max_tokens=8192)
     data = parse_json(result)
 
     write_text(OUTPUT / "cv_tailored.md", data.pop("cv_tailored"))

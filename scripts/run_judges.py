@@ -12,18 +12,21 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import OUTPUT, call, gen_dir, parse_json, read_json, read_text, write_json
+from _common import DEFAULT_MODEL, OUTPUT, call, gen_dir, parse_json, read_json, read_text, write_json
 
+# Diversity comes from persona (all three) and model (domain_expert uses a
+# different model than the generator, to reduce self-preference bias) --
+# not from temperature, which the Messages API no longer exposes.
 JUDGES = [
     {"id": "judge_skeptical_senior",
      "persona": "You are a skeptical senior reviewer. You've seen hundreds of applications and are quick to spot vague claims, generic phrasing, and unsupported assertions.",
-     "temperature": 0.3},
+     "model": DEFAULT_MODEL},
     {"id": "judge_warm_screener",
      "persona": "You are a warm first-read screener. You're looking for genuine enthusiasm and fit, and give candidates the benefit of the doubt on rough edges, while still noting real gaps.",
-     "temperature": 0.5},
+     "model": DEFAULT_MODEL},
     {"id": "judge_domain_expert",
      "persona": "You are a technically literate domain expert in this specific field. You test whether the candidate demonstrates real, specific knowledge of the field's landscape, not just generic competence language.",
-     "temperature": 0.4},
+     "model": "claude-opus-5"},
 ]
 
 SYSTEM_TEMPLATE = """{persona}
@@ -74,7 +77,7 @@ def main():
         )
         for judge in JUDGES:
             system = SYSTEM_TEMPLATE.format(persona=judge["persona"])
-            result = call(system, user, temperature=judge["temperature"], max_tokens=4096)
+            result = call(system, user, model=judge["model"], effort="high", max_tokens=4096)
             record = parse_json(result)
             record["variant_id"] = variant_id
             record["judge_id"] = judge["id"]

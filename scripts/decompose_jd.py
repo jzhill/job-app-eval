@@ -34,7 +34,7 @@ with exactly those four keys, each a list of {"id": "<short_snake_case_id>",
 
 def itemize():
     posting = read_text(require_input("job_posting.md"))
-    result = call(ITEMIZE_SYSTEM, posting, temperature=0.0)
+    result = call(ITEMIZE_SYSTEM, posting, effort="high")
     write_text(OUTPUT / "jd_itemised.md", result)
     print("Wrote output/jd_itemised.md.")
     print("Review it against the actual posting before running --decompose.")
@@ -45,7 +45,7 @@ def decompose():
     if not itemised_path.exists():
         raise SystemExit("output/jd_itemised.md not found -- run without --decompose first.")
     itemised = read_text(itemised_path)
-    result = call(DECOMPOSE_SYSTEM, itemised, temperature=0.0)
+    result = call(DECOMPOSE_SYSTEM, itemised, effort="high")
     components = parse_json(result)
     write_json(OUTPUT / "jd_components.json", components)
     print("Wrote output/jd_components.json. Review and hand-edit before proceeding --")

@@ -28,15 +28,20 @@ def get_client() -> anthropic.Anthropic:
 
 
 def call(system: str, user: str, model: str = DEFAULT_MODEL,
-         temperature: float = 0.7, max_tokens: int = 4096) -> str:
+         effort: str | None = None, max_tokens: int = 4096) -> str:
+    """effort: None (SDK default) or one of "low"/"medium"/"high"/"xhigh"/"max".
+    The Messages API has no temperature/top_p/top_k/seed parameter -- effort
+    (via output_config) is the only sampling-behavior knob it now exposes."""
     client = get_client()
-    message = client.messages.create(
+    kwargs = dict(
         model=model,
         max_tokens=max_tokens,
-        temperature=temperature,
         system=system,
         messages=[{"role": "user", "content": user}],
     )
+    if effort:
+        kwargs["output_config"] = {"effort": effort}
+    message = client.messages.create(**kwargs)
     return "".join(block.text for block in message.content if block.type == "text")
 
 

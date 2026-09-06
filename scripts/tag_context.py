@@ -82,7 +82,7 @@ def main():
         f"## Essay response\n{essay}\n\n"
         f"## External references\n{refs}\n"
     )
-    result = call(SYSTEM, user, temperature=0.0, max_tokens=8192)
+    result = call(SYSTEM, user, effort="high", max_tokens=8192)
     tagged = parse_json(result)
     write_json(OUTPUT / "tagged_context.json", tagged)
     write_text(OUTPUT / "tagged_context.md", render_markdown(tagged, components))

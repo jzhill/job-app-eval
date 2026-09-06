@@ -98,7 +98,7 @@ def main():
          "overall_candidate_feedback": r["overall_candidate_feedback"]}
         for r in records
     ]
-    recurring = call(SYNTHESIZE_SYSTEM, str(all_comments), temperature=0.0)
+    recurring = call(SYNTHESIZE_SYSTEM, str(all_comments), effort="high")
 
     top = ranked[:3]
     lines = [f"# Summary — gen{gen}\n", "## Top variants\n"]

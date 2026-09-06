@@ -418,9 +418,12 @@ structurally separate from content scores, exactly as in the original
 design, so it never gets blended into the content-quality ranking.
 
 **Judge diversity, not judge replication.** Run 3–5 judges per variant, not
-clones of one persona: vary the judge system-prompt persona, vary
-temperature across judges, and use a different model than the generator
-for at least one judge to reduce self-preference bias.
+clones of one persona: vary the judge system-prompt persona, and use a
+different model than the generator for at least one judge to reduce
+self-preference bias. (An earlier version of this design also called for
+varying temperature across judges — dropped, since the Messages API has no
+temperature/sampling-randomness parameter to vary; persona and model are
+the actual diversity levers now.)
 
 ---
 
