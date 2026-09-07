@@ -366,46 +366,10 @@ CLAUDE.md) directive about:
 
 ---
 
-## 2026-09-06 — Durable personal/career info vs. per-application output
-
-**Raised by Jeremy**, during Stage 7 follow-up (interrogating
-`tagged_context.json` coverage gaps).
-
-**The issue:** it's not yet clear how `tagged_context.json`,
-`external_references.md`, `input/essay/`, `output/interview_report.md`,
-and `input/cv/` actually relate to each other as a system — specifically,
-whether facts about Jeremy's own career/experience that surface *during*
-one pipeline run (e.g. answering a coverage-gap question in the Stage 8
-interview) get captured anywhere durable, or only live inside that one
-run's output.
-
-Right now the honest answer is: only inside that run. `output/` is fully
-gitignored, and the repo is deliberately kept single-application/flat
-(design doc §3: "Revisit once a second real application shows what
-actually needs to be shared vs. per-application."). So a fact Jeremy
-supplies to fill a coverage gap for *this* application has no defined
-path to becoming an input for a *future* application's run — each run
-rebuilds its picture of Jeremy from `input/essay/` + `input/cv/` +
-whatever interview happens that round, with nothing that persists as a
-standing "about me" corpus across applications.
-
-**Also noticed in the same session:** the pipeline stages read as fairly
-linear/checkpoint-based in the design doc, but live usage this cycle
-needed to loop back and amend an already-reviewed stage (adding new
-fragments to `tagged_context.json` after Stage 7 was nominally "approved,"
-in response to coverage-gap follow-up) rather than only ever moving
-forward. Worth considering whether the design doc should acknowledge this
-more explicitly, or whether it's already implied clearly enough by "agent
-in conversation" execution.
-
-**Not yet decided — options to consider when this gets scoped properly:**
-- A durable, cross-application "experience bank" (a new top-level folder,
-  outside `output/`'s per-run gitignore treatment) that future runs could
-  read as an additional standing input, alongside the per-application
-  `input/essay/` etc.
-- Or: treat this as already covered by `input/past_drafts/` /
-  `input/cv/` accumulating informally over time, with no new mechanism
-  needed.
-- Directly tied to design doc §3's own open question about what should
-  be shared vs. per-application once a second real application exists to
-  learn from.
+**Parked, not a backlog item:** the question of durable personal/career
+info vs. per-application output (whether facts Jeremy supplies mid-run,
+e.g. answering a coverage-gap question in the Stage 8 interview, should
+ever persist across applications instead of staying scoped to one run's
+`output/`) was raised 2026-09-06 and demoted here on 2026-09-07 — a stray
+future idea, not something being tracked toward a decision. See design
+doc §3 for the one-line pointer.

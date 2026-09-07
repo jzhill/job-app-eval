@@ -247,7 +247,10 @@ direction calls for gathering new context first).
 ## 3. Repo structure
 
 Single-application/flat for now — no `applications/<slug>/` scaffolding
-yet.
+yet. (A durable, cross-application "experience bank" for facts that
+surface mid-run is a stray future idea, not an active plan — revisit only
+once a second real application exists to show what's actually worth
+sharing vs. per-application.)
 
 ```
 repo/
