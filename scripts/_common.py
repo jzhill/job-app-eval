@@ -41,7 +41,8 @@ def call(system: str, user: str, model: str = DEFAULT_MODEL,
     )
     if effort:
         kwargs["output_config"] = {"effort": effort}
-    message = client.messages.create(**kwargs)
+    with client.messages.stream(**kwargs) as stream:
+        message = stream.get_final_message()
     return "".join(block.text for block in message.content if block.type == "text")
 
 

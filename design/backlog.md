@@ -8,6 +8,77 @@ mid-cycle. Newest entries at the top.
 
 ---
 
+## 2026-09-07 — Subagent tried to write a scratch file outside the working directory
+
+**Raised by Jeremy**, mid-Stage-14: the `gen2-synthesis` fork (reading all
+21 gen2 judge files to write the qualitative synthesis) attempted to
+`Read` a self-created scratch file at `\tmp\gen2_digest.txt` — outside
+the repo working directory, which triggered Claude Code's own
+outside-working-directory permission guardrail. Not a job-app-eval design
+issue (no pipeline stage asks for this), but a genuine process wrinkle:
+subagents doing large-file digestion work apparently sometimes create
+their own intermediate scratch files, and default to an OS-level temp
+path rather than something repo-local.
+
+**Not yet decided:**
+- Whether this needs an explicit instruction anywhere (a fork/subagent
+  briefing convention, or a note in `CLAUDE.md`) telling agents that if
+  they need scratch space, it should live under `output/` (already
+  gitignored) rather than an external temp directory — or whether this
+  is rare/cheap enough to just deny the permission prompt each time it
+  comes up and let the agent recover by working in-context instead.
+- No repo changes made — flagged for awareness only.
+
+---
+
+## 2026-09-07 — Judge/draft prompt complexity flagged again; single-document draft format proposed (not yet scoped)
+
+**Raised by Jeremy**, immediately after gen2's judge panel run needed two
+rounds of script fixes to complete (see `run_judges.py`/`_common.py`
+changes this session): `max_tokens` raised 16k→32k after judges
+repeatedly returned syntactically valid JSON that silently dropped all
+`preferred_qualifications`/`core_responsibilities` scores partway through
+a 26-item enumeration (only `required_qualifications`'s 8 items present,
+identical missing-key list across multiple judges/models/variants — not
+random flakiness), then a further fix to use the Messages API's streaming
+mode once the larger `max_tokens` pushed calls past the SDK's non-
+streaming request-duration limit. Both fixes were reactive patches to
+symptoms already flagged in the 2026-09-06 retrospective's #2/#3 findings
+("the current judge output schema asks for more free-form prose, across
+more fields, than either the budget or the failure rate can comfortably
+support") — today's schema is if anything heavier than the one that
+prompted that finding (added `section_assessments` and the fuller
+`input/job_posting.md` text on top of the existing 26-component/
+4-question/CV enumeration), so the underlying complexity concern was
+never actually resolved, just worked around again.
+
+**Separately, a structural idea for draft generation:** Jeremy noticed
+draft variants sometimes show strong content overlap, and floated whether
+Stage 12 should produce **one cohesive `.md` document per variant** (all
+four answers as a single continuous composition) instead of four
+separately generated files, on the theory that a model drafting one
+unified document naturally reasons about repetition/flow across the
+whole thing, rather than needing `drafting_guide.md`'s cohesion
+instruction to compensate for four independently-generated pieces after
+the fact. Not scoped or decided — would touch the draft file format
+(`data_schemas.md`), Stage 12's per-question-boundary framing, and how
+`run_judges.py` reads `drafts/genN/vXX/*.md` (currently one file per
+question via `variant_dir.glob("*.md")`).
+
+**Not yet decided — options to consider when this gets scoped properly:**
+- Whether the judge schema itself needs simplifying (fewer scored
+  fields, or splitting one mega-call into smaller calls per section) vs.
+  just continuing to raise token budgets/streaming as symptoms recur.
+- Whether a single-document draft format is actually more reliable for
+  cohesion than the current four-file format plus an explicit cohesion
+  instruction — untested hypothesis, not yet compared against the
+  current approach's actual failure rate.
+- If a single-document format were adopted, how Stage 13 would need to
+  change to still score each question distinctly (parsing sections back
+  out of one file, or asking the judge to do that itself).
+
+---
+
 ## 2026-09-07 — Judge-output key validation added; variant-count default flipped (backlog #3, part of #2)
 
 **Resolved — #3 (judge-output key validation):** `scripts/run_judges.py`

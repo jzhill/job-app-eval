@@ -235,12 +235,16 @@ filename, rather than one canonical file each:
 - **`input/essay/`** — the same free-writing often happens in more than
   one sitting, or Jeremy drafts a fragment somewhere and wants to add it
   later without deciding whether it belongs in "the" essay response or a
-  separate note. A folder removes that decision. Kept separate from
-  `input/past_drafts/` (Stage 10's voice-sample folder): essay content
-  here is expected to be rough, unedited freewriting, while voice
-  profiling depends on reading only corrected text — mixing the two
-  folders would make it easy to accidentally feed uncorrected prose into
-  the voice profile.
+  separate note. A folder removes that decision. Originally kept
+  strictly separate from `input/past_drafts/` (Stage 10's voice-sample
+  folder) on the assumption that essay content is always rough, unedited
+  freewriting, and voice profiling needs only corrected text. **Corrected
+  2026-09-07:** that's a default assumption, not an absolute rule — for
+  an application where Jeremy writes the essay carefully and it's already
+  proofread, it's both content *and* voice material, and excluding it
+  from Stage 10 by folder rule alone was actually wrong in that case. The
+  real criterion was always meant to be proofread status (ask if
+  unclear), not folder identity — see design doc Stage 10.
 - **`input/cv/`** — a generic CV and a version already partly tailored for
   a similar role often each carry detail the other lacks. Dropping
   several versions in lets the agent reconcile across them — pulling in a

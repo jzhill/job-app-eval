@@ -55,7 +55,7 @@ repo.
 | `preferences.md` | Optional | How you want the pipeline to weight things — priorities, hard constraints that must never be reverted. |
 | `external_resources.md`, `external_refs/` | Optional | URLs (one per line, with an optional note) or files with relevant background on the employer. |
 | `interview_transcripts/` | Optional | Transcripts/notes from a live interview conversation — one you already had, or one prompted by a brief the agent generates. |
-| `past_drafts/` | Optional | Prior application drafts, **corrected/proofread text only** — used to build a voice profile. Kept separate from `essay/` since that folder holds rough freewriting. |
+| `past_drafts/` | Optional | Prior application drafts, **corrected/proofread text only** — used to build a voice profile, along with `input/essay/` content too if that's already polished for this application rather than rough freewriting. Proofread status is what matters, not which folder a file sits in — say so if it's ambiguous. |
 
 Everything the pipeline generates lands in `output/`, gitignored the
 same way — see the design doc §3 for the full layout and

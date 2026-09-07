@@ -84,9 +84,9 @@ def main():
         component_scores = defaultdict(list)
         section_scores = defaultdict(list)
         question_scores = defaultdict(list)
-        overall_scores = []
+        vibe_scores = []
         for record in judge_records:
-            overall_scores.append(record["overall_score"])
+            vibe_scores.append(record["vibe_score"])
             for component_id, entry in record["component_scores"].items():
                 component_scores[component_id].append(entry["score"])
                 section = SECTION_BY_COMPONENT.get(component_id)
@@ -96,7 +96,7 @@ def main():
                 question_scores[question_id].append(entry["score"])
 
         variant_summaries[variant_id] = {
-            "mean_overall_score": round(statistics.mean(overall_scores), 2),
+            "mean_vibe_score": round(statistics.mean(vibe_scores), 2),
             "component_scores": {
                 k: {"mean": round(statistics.mean(v), 2), "n": len(v)}
                 for k, v in component_scores.items()
@@ -111,7 +111,7 @@ def main():
             },
         }
 
-    ranked = sorted(variant_summaries.items(), key=lambda kv: -kv[1]["mean_overall_score"])
+    ranked = sorted(variant_summaries.items(), key=lambda kv: -kv[1]["mean_vibe_score"])
     summary_json = {"variants": dict(ranked)}
     write_json(gen_dir("evals", gen) / "summary.json", summary_json)
 
@@ -120,12 +120,12 @@ def main():
     top = ranked[:3]
     lines = [f"# Summary — gen{gen}\n", "## Top variants\n"]
     for variant_id, data in top:
-        lines.append(f"- **{variant_id}**: {data['mean_overall_score']}/5")
+        lines.append(f"- **{variant_id}**: {data['mean_vibe_score']}/100")
     lines.append("\n" + (preserved if preserved else RECURRING_PLACEHOLDER.format(gen=gen)))
     write_text(gen_dir("evals", gen) / "summary.md", "\n".join(lines))
 
     print(f"Wrote output/evals/gen{gen}/summary.json and summary.md.")
-    print(f"Top variant: {top[0][0]} ({top[0][1]['mean_overall_score']}/5)")
+    print(f"Top variant: {top[0][0]} ({top[0][1]['mean_vibe_score']}/100)")
     if preserved:
         print("Preserved existing recurring-findings synthesis from prior summary.md.")
     else:

@@ -81,13 +81,17 @@ components to a question; that mapping happens at Stage 12. Schema:
 #### Stage 3 — Marking Guide Co-Creation
 **Input:** Stages 1–2's outputs. Co-created live with Jeremy (same
 checkpoint style as Stage 7) → `output/marking_guide.md`: a general 1–5
-score-anchor rubric, an instruction to use ids verbatim, a rule
-connecting `overall_score` to `overall_outcome`, and a comment-length cap
-(≤40 words per component/question/CV/style comment, ≤100 words for the
-overall narrative — a starting default, not fixed). `scripts/run_judges.py`
-requires this file to exist and splices it into the judge system prompt —
-a hard precondition for Stage 13, not an optional nicety. Expected
-sections: [`data_schemas.md`](data_schemas.md#marking_guidemd).
+score-anchor rubric for required/preferred qualifications, core
+responsibilities, questions, and the CV (`mission_signals` items are
+context only, not scored individually), a per-section ≤40-word
+qualitative synopsis requirement, an instruction to use ids verbatim, a
+rule connecting the independent holistic 0–100 `vibe_score` to
+`overall_outcome`, and a comment-length cap (≤40 words per component/
+question/CV/section comment, ≤100 words each for the two overall text
+fields — a starting default, not fixed). `scripts/run_judges.py` requires
+this file to exist and splices it into the judge system prompt — a hard
+precondition for Stage 13, not an optional nicety. Expected sections:
+[`data_schemas.md`](data_schemas.md#marking_guidemd).
 
 #### Stage 4 — Drafting Guide Co-Creation
 **Input:** same as Stage 3. Co-created live with Jeremy →
@@ -141,10 +145,16 @@ Jeremy writes `input/preferences.md` directly — how to weight things
 belong in Stage 15's `direction.md` instead, so this file doesn't
 accumulate noise.
 
-#### Stage 10 — Voice Profiling *(optional, needs `input/past_drafts/`)*
-One-shot distillation — not a loop — from corrected source text only,
-never raw dictated/transcribed originals → `output/voice_profile.md`, a
-fixed input to every Stage 12 call, not regenerated per variant/round.
+#### Stage 10 — Voice Profiling *(optional, needs at least one proofread source)*
+One-shot distillation — not a loop — from corrected/proofread source
+text only, never raw dictated/transcribed originals →
+`output/voice_profile.md`, a fixed input to every Stage 12 call, not
+regenerated per variant/round. Source is normally `input/past_drafts/`,
+but `input/essay/` content counts too if it's actually already polished
+for this application rather than rough freewriting — proofread status is
+the real criterion, not which folder a file sits in. If it's unclear
+which applies, ask Jeremy rather than assuming from folder location
+alone.
 
 #### Stage 11 — CV Tailoring
 Reconciles every file in `input/cv/` against JD components + tagged
@@ -203,13 +213,23 @@ judges must never share context with the session that produced the
 material they're evaluating. Every (variant, judge) call is independent,
 so they run concurrently (a bounded thread pool, not one call at a time)
 — this is purely a scheduling optimization within the script and doesn't
-touch the isolation guarantee at all. 3–5 judges, varied persona, at least
-one on a different model than the generator. Each judge scores the whole
-package **once** (not per-question): every JD component, every form
-question, the CV, a low-weight `style_fidelity` check kept structurally
-separate from content scores, and one overall score/outcome/comment —
-all per the rubric in `output/marking_guide.md` (Stage 3). Written to
-`output/evals/genN/vXX_<judge>.json`. Schema:
+touch the isolation guarantee at all. Calls go through `_common.py`'s
+`call()` helper using the Messages API's streaming mode, not a single
+blocking request — these are large, high-effort generations (26 scored
+components + 4 questions + CV + section assessments + two overall
+comments per call) that can run long enough to trip the SDK's non-
+streaming request-duration limit otherwise. 3–5 judges, varied persona, at
+least one on a different model than the generator. Judges see the full
+`input/job_posting.md` text alongside its structured `jd_components.json`
+breakdown — a real screener reads the posting itself, not just a
+checklist derived from it. Each judge scores the whole package **once**
+(not per-question): every required/preferred
+qualification and core-responsibility item, a qualitative synopsis per
+section, every form question, the CV, and an independent holistic
+`vibe_score`/outcome/two overall comments — all per the rubric in
+`output/marking_guide.md` (Stage 3). `mission_signals` and voice/style are
+deliberately not scored here — style is Stage 4/12's job, not a naive HR
+screener's. Written to `output/evals/genN/vXX_<judge>.json`. Schema:
 [`data_schemas.md`](data_schemas.md#judge-record).
 
 ### Phase 5 — Aggregate & understand outcome (Stages 14–15)
@@ -217,7 +237,7 @@ all per the rubric in `output/marking_guide.md` (Stage 3). Written to
 #### Stage 14 — Aggregation
 `python scripts/aggregate.py --gen N` computes the deterministic numeric
 rollup — mean/variance per component per variant, a section-level rollup
-(by the four JD categories), per-question rollups, CV-evaluation
+(by the three scored JD categories), per-question rollups, CV-evaluation
 consensus — into `output/evals/genN/summary.json`. Agent then reads every
 judge file directly and writes the qualitative synthesis into
 `summary.md`: top 2–3 variants, plus whichever comments recur across ≥2

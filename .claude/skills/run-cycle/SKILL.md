@@ -116,9 +116,11 @@ design doc / `history_and_rationale.md`, not here.
    synchronously.
 9. **Preferences** -- Jeremy-authored, read `input/preferences.md` if
    present; nothing to produce.
-10. **Voice profiling** -- only if `input/past_drafts/` has content. If
-    `voice_profile.md` already exists, ask whether to refresh it or keep
-    it (design doc §Stage 10).
+10. **Voice profiling** -- if `input/past_drafts/` has content, or
+    `input/essay/` content is itself already proofread/polished for this
+    application (ask if unclear, don't assume from folder alone) --
+    otherwise skip. If `voice_profile.md` already exists, ask whether to
+    refresh it or keep it (design doc §Stage 10).
 11. **CV tailoring** -- tailor using everything in `input/cv/` + tagged
     context + JD components + preferences -> `cv_tailored.md` +
     `cv_tailoring_notes.json`. Present the result; not a hard stop, but

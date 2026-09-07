@@ -56,20 +56,33 @@ record. Expected sections:
 # Marking Guide
 
 ## Score anchors (1-5)
-5 = <what fully meeting a component/question looks like>
+5 = <what fully meeting a component/question/CV looks like>
 ...
 1 = <what no evidence, or contradicting evidence, looks like>
+Applies to required/preferred qualification and core-responsibility
+component scores, question scores, and the CV score. `mission_signals`
+items are not scored individually -- context only, weighed into the vibe
+score and qualitative assessments instead.
 
 ## Id usage
-Use component/question ids exactly as given in jd_components.json /
-form_questions.json. Never rename, invent, or duplicate a key.
+Use component ids (required_qualifications/preferred_qualifications/
+core_responsibilities only) exactly as given in jd_components.json, and
+question ids exactly as given in form_questions.json. Never rename,
+invent, or duplicate a key.
 
-## overall_score -> overall_outcome rule
-<the stated threshold/logic, agreed live with Jeremy>
+## Section assessments
+One <=40-word qualitative synopsis per scored section (required_
+qualifications, preferred_qualifications, core_responsibilities) --
+the pattern across that section's items, not a restatement of the
+per-item comments.
+
+## Vibe score -> overall_outcome rule
+<the stated 0-100 threshold/logic, agreed live with Jeremy -- vibe_score
+is the judge's independent holistic score, not a computed average>
 
 ## Comment length
-- Component/question/CV/style_fidelity comments: <= 40 words each.
-- overall_candidate_feedback: <= 100 words.
+- Component/question/CV comments and section assessments: <= 40 words each.
+- overall_assessment / candidate_feedback: <= 100 words each.
 (Starting default -- adjust live with Jeremy if a real run shows it's too
 tight or too loose.)
 ```
@@ -170,20 +183,28 @@ Produced by Stage 13. One file per (variant, judge):
     "req_clinical_ai": {"score": 4, "comment": "Concrete Kiribati example, but doesn't name what was non-standard vs off-the-shelf CAD4TB."},
     "resp_partnerships": {"score": 2, "comment": "Almost entirely absent."}
   },
+  "section_assessments": {
+    "required_qualifications": "Clinical/field grounding is strong throughout; AI-validation depth is the weak point.",
+    "preferred_qualifications": "Healthtech-company experience is the clear gap; everything else partially present.",
+    "core_responsibilities": "Partnership-building evidenced well; regulatory engagement thinner."
+  },
   "question_scores": {
     "q_why_anthropic": {"score": 4, "comment": "Strong, direct answer to the actual prompt."}
   },
   "cv_evaluation": {"score": 4, "comment": "AI X-ray work now visible and quantified; good."},
-  "style_fidelity": {"score": 4, "comment": "One sentence drifts toward generic phrasing mid-paragraph 3.",
-                      "weight": "low — sanity check only, not blended into content scores"},
-  "overall_score": 4,
-  "overall_outcome": "screen_in",
-  "overall_candidate_feedback": "Strong on validation philosophy, weak on partnership evidence."
+  "vibe_score": 78,
+  "overall_outcome": "borderline",
+  "overall_assessment": "Strong on validation philosophy and field grounding, weak on partnership evidence and healthtech exposure. Real candidate, not a top screen.",
+  "candidate_feedback": "Strong on validation philosophy, weak on partnership evidence."
 }
 ```
 
-`component_scores` keys are JD-component ids from `jd_components.json`;
+`component_scores` keys are JD-component ids from `jd_components.json`
+(`required_qualifications`/`preferred_qualifications`/`core_responsibilities`
+only -- `mission_signals` items aren't scored individually);
 `question_scores` keys are question ids from `form_questions.json`.
+`vibe_score` is the judge's independent holistic 0-100 score, not a
+computed average of the scores above.
 
 ---
 
