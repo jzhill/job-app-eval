@@ -1,14 +1,13 @@
 # job-app-eval
 
-A pipeline, run as a live Claude Code session, that automates a manual
-workflow Jeremy already ran by hand in a browser Claude session: drafting
-and evaluating a "Why Anthropic" job application essay against a job
-description, using a multi-judge LLM panel instead of gut-feel. Only the
-judge panel itself is a separate script calling the Anthropic API —
-everything else is done by the agent operating directly in this repo (see
-"Core principle" below).
-
-Full design: @design/agentic_application_eval_design.md
+A pipeline, run as a live Claude Code session, that drafts and evaluates
+a job application (CV + written answers) against a specific job posting,
+to maximize the chance of being screened in. Only the judge panel (Stage
+13) is a separate script calling the Anthropic API — everything else is
+done by the agent operating directly in this repo. Full design, including
+*why* it's built this way: @design/agentic_application_eval_design.md.
+Decision history and extended rationale not needed day-to-day:
+@design/history_and_rationale.md.
 
 To actually produce/advance an application end-to-end (not to discuss or
 redesign the pipeline), invoke the `/run-cycle` skill
@@ -19,51 +18,27 @@ it isn't active.
 
 ## Repo layout and what's public
 
-This repo is public — but only the **code and documentation** (the
-methodology, the pipeline, the design rationale), not any actual
-application content. That's a deliberate, important distinction: an
-earlier version of this project committed generated files on the theory
-that they just reproduced public posting text, which missed that draft
-essay text, judge scores/critiques, and the tailored CV are the
-application's actual substance and strategy, not public information.
-
-- `input/` and `output/` are **both gitignored, never committed** — the
-  whole rule fits in one line: `input/` is what Jeremy provides
-  (`job_posting.md`, `cv/`, `essay/`, optionally `preferences.md`/
-  `external_resources.md`/`external_refs/`/`interview_transcripts/`/
-  `past_drafts/`); `output/` is everything the pipeline generates from it
-  (decomposed JD/form, tagged context, drafts, judge evals, everything).
-  Several of the input folders (`cv/`, `essay/`, `interview_transcripts/`)
-  take any number of files with any filename — the agent reads and
-  reconciles everything dropped in, rather than expecting one canonical
-  file. See README.md for the exact required/optional input files. If
-  you're ever about to `git add` a file under either directory, stop —
-  check `.gitignore` covers it, don't assume.
-
-## Core principle (from the design doc)
-
-Everything is scored against the job description, not a generic rubric.
-`jd_components.json` is the spine every downstream score ties back to.
-
-A second principle governs *how* each stage runs: naivety is scarce, and
-only Stage 11 (the judge panel) actually needs it — that's the only stage
-whose value depends on the executor not having shared context with
-whatever produced the material it's judging. Every other stage is
-performed directly by the Claude Code agent in this session, not a
-separate script. See design doc §1.
+This repo is public — but only the **code and documentation**, not any
+actual application content. `input/` and `output/` are **both gitignored,
+never committed**: `input/` is what Jeremy provides (`job_posting.md`,
+`cv/`, `essay/`, and other optional folders — see README.md for the
+exact list); `output/` is everything the pipeline generates from it
+(decomposed JD/form, tagged context, drafts, judge evals, everything).
+Draft text, judge scores, and the tailored CV are the application's
+actual substance and strategy, not public information. If you're ever
+about to `git add` a file under either directory, stop — check
+`.gitignore` covers it, don't assume.
 
 ## Working with Jeremy
 
 - New to Claude Code (comfortable with GUI IDEs, has CS fundamentals) —
   explain CLI-specific mechanics briefly when they matter, don't assume
   prior exposure to this tool specifically.
-- Stays in the loop by design at three points: approving the context
-  mapping (Stage 5), participating directly in the reflective interview
-  (Stage 6), and doing the manual "sniff test" + supplying direction after
-  each judge-panel round (Stage 13). Now that most stages run as direct
-  conversation rather than script-then-review, these are moments within
-  that conversation to stop and check in, not separate steps to skip past
-  even though skipping would be easy.
+- Stays in the loop by design at three points: approving context mapping
+  (Stage 7), participating directly in the reflective interview (Stage
+  8), and the sniff test + direction after each judge-panel round (Stage
+  15). These are moments within the ongoing conversation to stop and
+  check in, not separate steps to skip past.
 - Prefers direct, specific, sometimes blunt feedback over generic
   encouragement. Wants AI to do heavy lifting on structure/condensation/
   polish, but substantive claims about his experience must originate from
@@ -71,36 +46,42 @@ separate script. See design doc §1.
 - Wants exactly what's asked for, nothing more — no unsolicited features,
   refactors, or abstractions in code; no unsolicited rewrites in prose.
   Always still flag a genuine gap or better approach, then wait.
-- A real overclaim already made it through several drafting rounds once
-  during the original pilot before being caught (see README.md
-  "Background" for the actual story — deliberately not repeated here or
-  in the design doc, since neither should hardcode one application's
-  specific content). This is why `overclaim_risk` is a permanent,
-  hard-constraint judge score, not a style preference — don't let
-  generation drift back toward overstating ownership of collaborative
-  work. CV tailoring (Stage 9) runs in-context like most other stages now,
-  but that doesn't weaken this guard: self-review already failed once in
-  the original near-miss, which is exactly why Stage 11's naive, isolated
-  judge panel — not the tailoring step itself — is the backstop that has
-  to actually catch it.
+- The overclaim guard (design doc §5, Stages 4/11) is a permanent,
+  load-bearing rule, not a style preference — don't let generation drift
+  back toward overstating ownership of collaborative work.
+
+## Submission-ready checklist
+
+Run this before Stage 13 (design doc, Stage 13 precondition) — a cheap,
+non-naive hygiene pass over `cv_tailored.md` and every drafted variant,
+not a judgment call the panel needs to be naive to make:
+
+- No placeholder tokens (unfilled contact info, `[TODO]`, `<...>`, etc.)
+  anywhere in the actual file content.
+- No leftover internal notes or meta-commentary in the content itself —
+  editorial asides belong in `cv_tailoring_notes.json` or conversation,
+  never inline in `cv_tailored.md` or a draft answer.
+- No near-duplicate content between a variant's own answers — each
+  question should say something distinct from the others in that variant.
+- Word/character limits from `form_questions.json` respected.
+
+Fix directly if something fails; don't hand a known defect to the
+(expensive) judge panel and let it get flagged repeatedly instead.
 
 ## Stack notes
 
-- Only Stage 11 (judging, `scripts/run_judges.py`) calls the Anthropic API
-  directly. Draft generation (Stage 10) moved in-context — variant
-  independence is preserved by forking one subagent per variant, not by
-  routing generation through a separate API call. Every stage besides 11
-  is performed by the Claude Code agent operating in this session; see
-  design doc §1 for why the split lands exactly there.
-- `scripts/` holds only `_common.py`, `run_judges.py`, and
-  `aggregate.py` (Stage 12's deterministic numeric rollup — no API key
-  needed). There's no script for the other stages and none is needed:
-  the agent produces the same output files directly, per design doc §2.
-  `scripts/deprecated/` holds the superseded per-stage scripts from
-  before this redesign — kept for reference, not run as part of the
-  active pipeline. Don't wire them back in; if the design ever reverts
-  to script-per-stage, move them back rather than rewriting from scratch.
-- Exact JSON shapes for generated files live in `design/data_schemas.md`,
-  not in the main design doc — check there before hand-writing a schema
-  that already has a defined shape. Those shapes are the contract
-  regardless of whether a script or the agent produced the file.
+- Only Stage 13 (`scripts/run_judges.py`) calls the Anthropic API. Every
+  other stage is performed by the Claude Code agent directly in this
+  session — see design doc §1 for why.
+- `scripts/` holds only `_common.py`, `run_judges.py`, and `aggregate.py`
+  (Stage 14's deterministic numeric rollup — no API key needed).
+  `scripts/deprecated/` holds superseded per-stage scripts from before
+  the in-context redesign — kept for reference, not run as part of the
+  active pipeline; don't wire them back in.
+- Exact JSON/file shapes live in `design/data_schemas.md`, not the main
+  design doc — check there before hand-writing a schema that already has
+  a defined shape.
+- `run_judges.py` requires `output/marking_guide.md` (Stage 3) to exist
+  and fails loudly if it doesn't. Stage 12 similarly requires
+  `output/drafting_guide.md` (Stage 4) as a fixed input alongside
+  `voice_profile.md`.

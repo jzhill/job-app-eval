@@ -1,4 +1,4 @@
-"""Stage 12: Aggregation (numeric half only).
+"""Stage 14: Aggregation (numeric half only).
 
 Usage: python scripts/aggregate.py --gen 1
 
@@ -6,7 +6,7 @@ Computes the mean/variance rollups directly -- no LLM needed for
 arithmetic, no Anthropic API key required. Writes summary.json and the
 numeric-ranking half of summary.md. The qualitative "what recurs across
 judges" synthesis is done by the agent, in-context, reading the eval files
-directly -- see design doc Stage 12. This script used to make an LLM call
+directly -- see design doc Stage 14. This script used to make an LLM call
 for that synthesis too; that moved in-context along with every other
 non-Stage-11 stage.
 """
@@ -24,7 +24,7 @@ RECURRING_PLACEHOLDER = (
     f"{RECURRING_HEADING}\n\n"
     "*(agent: fill this in by reading output/evals/gen{gen}/v*_judge_*.json "
     "directly and pulling out comments that recur across >=2 judges -- "
-    "see design doc Stage 12)*"
+    "see design doc Stage 14)*"
 )
 
 
@@ -129,7 +129,7 @@ def main():
     if preserved:
         print("Preserved existing recurring-findings synthesis from prior summary.md.")
     else:
-        print("Numeric rollup only -- add the recurring-findings synthesis in-context, per design doc Stage 12.")
+        print("Numeric rollup only -- add the recurring-findings synthesis in-context, per design doc Stage 14.")
 
 
 if __name__ == "__main__":

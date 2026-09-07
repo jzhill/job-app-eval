@@ -8,11 +8,117 @@ mid-cycle. Newest entries at the top.
 
 ---
 
+## 2026-09-07 — Judge panel parallelized + concrete comment-length caps (backlog #2)
+
+**Resolved, partially:** `scripts/run_judges.py` now runs its
+(variant, judge) calls concurrently via a bounded `ThreadPoolExecutor`
+(`MAX_WORKERS = 5`) instead of one call at a time — every call is fully
+independent (no shared state), so this cuts wall-clock latency roughly in
+proportion to the concurrency level without touching Stage 13's isolation
+guarantee (still one script, still no shared context with the drafting
+session). Bounded rather than unbounded to avoid tripping the Anthropic
+API's per-minute rate limits. Doesn't reduce cost — only latency.
+
+Separately, the marking guide's comment-length cap (previously an
+abstract placeholder in `data_schemas.md`) now has concrete starting
+defaults: ≤40 words per component/question/CV/style comment, ≤100 words
+for the overall narrative. This should reduce both cost (shorter required
+output) and — per the gen1 retrospective's #3 finding that malformed JSON
+correlated with the longest responses — retry-triggering failures too.
+
+**Still open:**
+- `cv_evaluation` still re-scores the identical CV in every judge call of
+  a round (not decoupled).
+- Default variant count still defaults to the top of the 5–10 range
+  rather than starting narrow for a first round.
+- No rate-limit backoff/retry added for the concurrency change itself
+  (only the existing JSON-parse/required-key retry loop) — worth
+  revisiting if `MAX_WORKERS = 5` turns out to still trip rate limits in
+  practice.
+
+---
+
+## 2026-09-07 — Pre-judge submission-readiness gate added (backlog #1)
+
+**Resolved:** the gen1 retrospective's #1 finding (no cheap, non-naive
+check catching placeholders/leftover notes/near-duplicate answers before
+they reach the expensive, isolated judge panel) is addressed. No new
+pipeline stage — folded into Stage 13 as an explicit precondition
+(design doc, Stage 13) plus a concrete checklist in `CLAUDE.md`
+(`## Submission-ready checklist`), and wired into `SKILL.md`'s Step 2
+so a real run-cycle actually executes it before `run_judges.py`.
+Deliberately kept as a plain agent-run checklist, not a scripted gate —
+it's a hygiene pass ("does this file look done"), not a judgment call,
+so it doesn't need code or an API call to enforce.
+
+**Still open from the gen1 retrospective:**
+- **#2 — cost/latency.** `cv_evaluation` still re-scores the identical CV
+  in every judge call of a round; default variant count still defaults to
+  the top of the 5–10 range rather than starting narrow.
+- **#3 — judge-output reliability.** `component_scores`/`question_scores`
+  key validation against the actual JD-component/question ids (vs. just
+  JSON-syntax/required-key validation, already fixed) is still unbuilt.
+
+---
+
+## 2026-09-06 — Marking guide + drafting guide added; overclaim scoring simplified
+
+**Raised by Jeremy**, in the session immediately following the gen1
+retrospective below, scoping and resolving two of its five findings.
+
+**Resolved this session:**
+- **#4 (judge marking guide under-directive)** — addressed by a new
+  co-created artifact, `output/marking_guide.md`, produced by a new
+  **Stage 3** right after JD/form decomposition (Stages 1–2), before any
+  of the personal-context stages run. Contains the rubric anchor, the
+  id-verbatim instruction, the `overall_score`→`overall_outcome` decision
+  rule, and a comment-length cap. `scripts/run_judges.py` now reads this
+  file and fails loudly if it's missing, instead of hardcoding the rubric
+  in `SYSTEM_TEMPLATE`.
+- **#5 (Stage 12 drafting instructions under-directive)** — addressed by a
+  second new artifact, `output/drafting_guide.md`, produced by a new
+  **Stage 4** alongside Stage 3. Spells out each form question's
+  distinct content boundary and a whole-variant cohesion requirement.
+  Every Stage 12 forked variant subagent now reads this file as a fixed
+  input, alongside `voice_profile.md`.
+- **Separately, `overclaim_risk` was simplified, not expanded.** Jeremy's
+  call: treating it as a permanent, separately-scored Stage 13 judge
+  dimension was over-engineered relative to the actual risk, now that the
+  lesson from the original near-miss is well internalized — and it turned
+  out never to have actually been implemented as a judge-record field
+  anyway (confirmed by reading `data_schemas.md` and `run_judges.py` — no
+  such key existed). The guard is now just Stage 11's existing
+  `claims_checklist` (unchanged) plus a plain consistency instruction
+  inside the new `drafting_guide.md` (Stage 4) — no judge-record field,
+  no separate rubric line. `design/agentic_application_eval_design.md`
+  §1, §5, Stage 11, and Stage 13; `CLAUDE.md`; and `README.md` were all
+  updated to match.
+
+**Still open, deliberately out of scope this session:**
+- **#1 — no pre-Stage-11 quality gate.** Not addressed. A cheap,
+  no-API-cost checklist pass (no placeholders, no leftover internal notes,
+  no near-duplicate answers within a variant) before Stage 13 runs is
+  still unbuilt.
+- **#2 — cost/latency.** Partially addressed as a side effect: the
+  marking guide's comment-length cap directly targets the biggest
+  suspected driver (unbounded per-field judge prose). Not addressed:
+  `cv_evaluation` re-scoring the identical CV in every one of a round's
+  judge calls, and the practical default variant count for a first round.
+- **#3 — judge-output reliability.** The JSON-syntax + required-key retry
+  loop (already fixed before this session) is untouched. Still open:
+  validating `component_scores`/`question_scores` keys against
+  `jd_components.json`/`form_questions.json`'s actual ids and
+  retrying/warning on mismatch — the marking guide's id-verbatim
+  instruction (Stage 3) should reduce how often this happens, but
+  doesn't add the validation code itself.
+
+---
+
 ## 2026-09-06 — gen1 pilot retrospective: quality gate, cost, and judge-output reliability
 
 **Raised by Jeremy**, immediately after the first live exploration round
 (gen1, 7 variants, JD = Anthropic Partner Manager, Global Health) went
-through Stages 9–12 end to end. Deliberately kept at the process/meta
+through Stages 11–14 end to end. Deliberately kept at the process/meta
 level below — no application content, scores, or judge comments
 reproduced here, per the repo's public/private split (README
 "Background", design doc §3).
@@ -25,7 +131,7 @@ address them before continuing:
 
 ### 1. No quality gate before the expensive, isolated judge panel
 
-Stage 11 is deliberately isolated (design doc §1) so its whole value
+Stage 13 is deliberately isolated (design doc §1) so its whole value
 comes from a naive read — but this run showed that isolation stage was
 also catching things a **cheap, in-context, non-naive check could have
 caught for free before ever spending judge-panel money**:
@@ -36,7 +142,7 @@ caught for free before ever spending judge-panel money**:
   (rather than in `cv_tailoring_notes.json` or conversation). Every
   single judge call this round was handed that flawed CV, and every one
   of them flagged it — a defect that a basic "is this file actually
-  submission-ready" pass would have caught before Stage 11 ran at all,
+  submission-ready" pass would have caught before Stage 13 ran at all,
   not something that needed judge naivety to surface.
 - At least one draft variant had a completion problem (heavy duplication
   between two of its four answers) that a basic self-review — "does each
@@ -44,7 +150,7 @@ caught for free before ever spending judge-panel money**:
   others" — would also have caught for free, without needing an outside
   reader.
 
-**The distinction worth drawing:** Stage 11's isolation is for judgment
+**The distinction worth drawing:** Stage 13's isolation is for judgment
 calls that specifically require *not having been in the room* (does this
 argument land, does this overclaim, is the tone right for a stranger).
 Placeholder text, leftover internal notes, and one answer duplicating
@@ -52,7 +158,7 @@ another within the same variant are **completion/hygiene problems**, not
 judgment calls — the agent doesn't need to be naive to catch them, it
 just needs to actually check before handing material to the (expensive)
 judge panel. The pipeline currently has no explicit step for this second
-category between Stage 10 (drafting) and Stage 11 (judging).
+category between Stage 12 (drafting) and Stage 13 (judging).
 
 ### 2. Cost and time: ~$15 and ~40 minutes for one exploration round
 
@@ -74,10 +180,10 @@ Contributing factors, roughly in order of likely impact:
 - `cv_evaluation` re-scores the identical, unchanged `cv_tailored.md`
   inside every one of the 7×3 = 21 calls this round, even though the CV
   doesn't vary by variant — the design doc already flags this as "minor
-  duplication... acceptable as-is" (Stage 11), but that assumption is
+  duplication... acceptable as-is" (Stage 13), but that assumption is
   worth revisiting now that cost is a live concern, not a theoretical
   one. Whether it can be decoupled without weakening the "whole package,
-  not siloed" holistic-scoring principle (design doc Stage 11) is an
+  not siloed" holistic-scoring principle (design doc Stage 13) is an
   open question, not a settled one.
 - 7 variants for a first exploration round is at the upper end of the
   design doc §4 default range (5–10) — and in this round, 6 of the 7
@@ -152,7 +258,7 @@ for how to use it consistently:
 
 Related to #1, but distinct: the gap isn't only that nothing *checks*
 for intra-variant duplication after the fact (a gate, #1 above) — it's
-that Stage 10's instructions to each forked subagent don't clearly
+that Stage 12's instructions to each forked subagent don't clearly
 *specify* what each of the four questions is actually for, so a subagent
 has no positive spec to draft against in the first place. Right now each
 question gets a loose one-line hint (e.g. "cover the AI X-ray build...")
@@ -181,15 +287,15 @@ CLAUDE.md) directive about:
 
 - Add an explicit, cheap (no API cost) pre-Stage-11 quality gate: a fixed
   checklist the agent runs against `cv_tailored.md` and every drafted
-  variant before Stage 11 is allowed to run (no placeholder tokens, no
+  variant before Stage 13 is allowed to run (no placeholder tokens, no
   internal notes/meta-commentary left in output content, word-count
   guidance respected, no near-duplicate content between a variant's own
-  answers). Needs a home — a new short design doc subsection (Stage 10.5?
-  or folded into Stage 10/11's existing text) plus an explicit "what does
+  answers). Needs a home — a new short design doc subsection (Stage 12.5?
+  or folded into Stage 12/13's existing text) plus an explicit "what does
   a submission-ready draft/CV actually look like" checklist somewhere
   concrete (CLAUDE.md or the design doc), not left to be reconstructed
   from judgment each session.
-- Tighten Stage 11's judge system prompt to bound comment length per
+- Tighten Stage 13's judge system prompt to bound comment length per
   field (e.g. one sentence per component, a fixed short cap on the
   overall narrative instead of unrestricted length) — likely the single
   highest-leverage change for both cost and reliability.
@@ -201,7 +307,7 @@ CLAUDE.md) directive about:
   required-key validation in `scripts/run_judges.py`.
 - Open question, not yet resolved: whether `cv_evaluation` can be
   decoupled from the per-variant judge call (scored once per judge
-  instead of once per variant) without weakening Stage 11's "whole
+  instead of once per variant) without weakening Stage 13's "whole
   package, not siloed" holistic-scoring principle.
 - Make the judge marking guide itself more directive (#4): add a scoring
   rubric anchor per point on the 1–5 scale, an explicit instruction to
@@ -210,12 +316,12 @@ CLAUDE.md) directive about:
   belongs in `scripts/run_judges.py`'s `SYSTEM_TEMPLATE`, possibly with
   the rubric anchor itself documented in the design doc or
   `data_schemas.md` so it's not buried only in the prompt string.
-- Make Stage 10's drafting instructions more directive per question and
+- Make Stage 12's drafting instructions more directive per question and
   about whole-variant cohesion (#5): a clear, positive content spec for
   what each form question is for (not just what to avoid duplicating),
   plus an explicit cohesion requirement that all four answers plus the
   CV read as one coordinated application — likely belongs in the design
-  doc's Stage 10 section and/or CLAUDE.md, since it's instruction content
+  doc's Stage 12 section and/or CLAUDE.md, since it's instruction content
   every future drafting fork needs, not just a run-cycle sequencing
   detail.
 
@@ -223,14 +329,14 @@ CLAUDE.md) directive about:
 
 ## 2026-09-06 — Durable personal/career info vs. per-application output
 
-**Raised by Jeremy**, during Stage 5 follow-up (interrogating
+**Raised by Jeremy**, during Stage 7 follow-up (interrogating
 `tagged_context.json` coverage gaps).
 
 **The issue:** it's not yet clear how `tagged_context.json`,
 `external_references.md`, `input/essay/`, `output/interview_report.md`,
 and `input/cv/` actually relate to each other as a system — specifically,
 whether facts about Jeremy's own career/experience that surface *during*
-one pipeline run (e.g. answering a coverage-gap question in the Stage 6
+one pipeline run (e.g. answering a coverage-gap question in the Stage 8
 interview) get captured anywhere durable, or only live inside that one
 run's output.
 
@@ -247,7 +353,7 @@ standing "about me" corpus across applications.
 **Also noticed in the same session:** the pipeline stages read as fairly
 linear/checkpoint-based in the design doc, but live usage this cycle
 needed to loop back and amend an already-reviewed stage (adding new
-fragments to `tagged_context.json` after Stage 5 was nominally "approved,"
+fragments to `tagged_context.json` after Stage 7 was nominally "approved,"
 in response to coverage-gap follow-up) rather than only ever moving
 forward. Worth considering whether the design doc should acknowledge this
 more explicitly, or whether it's already implied clearly enough by "agent

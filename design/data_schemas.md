@@ -47,9 +47,67 @@ Produced by Stage 2.
 
 ---
 
+## `marking_guide.md`
+
+Produced by Stage 3. Prose, not JSON — a rubric document, not a data
+record. Expected sections:
+
+```markdown
+# Marking Guide
+
+## Score anchors (1-5)
+5 = <what fully meeting a component/question looks like>
+...
+1 = <what no evidence, or contradicting evidence, looks like>
+
+## Id usage
+Use component/question ids exactly as given in jd_components.json /
+form_questions.json. Never rename, invent, or duplicate a key.
+
+## overall_score -> overall_outcome rule
+<the stated threshold/logic, agreed live with Jeremy>
+
+## Comment length
+- Component/question/CV/style_fidelity comments: <= 40 words each.
+- overall_candidate_feedback: <= 100 words.
+(Starting default -- adjust live with Jeremy if a real run shows it's too
+tight or too loose.)
+```
+
+Read directly by `scripts/run_judges.py`, which splices its contents into
+the judge system prompt — see design doc Stage 3/Stage 13.
+
+---
+
+## `drafting_guide.md`
+
+Produced by Stage 4. Prose, not JSON. Expected sections:
+
+```markdown
+# Drafting Guide
+
+## Per-question content boundaries
+q_why_anthropic: <what this question is for, what it should NOT cover>
+q_ai_fluency: <...>
+...
+
+## Whole-variant cohesion requirement
+<the standing rule that all answers + the CV must read as one coordinated
+application with consistent claims>
+
+## Consistency check (replaces a separate overclaim score)
+<the standing instruction that claims about Jeremy's own experience must
+not exceed what cv_tailored.md / tagged_context.json actually support>
+```
+
+Read by every Stage 12 forked variant subagent, alongside
+`voice_profile.md` — see design doc Stage 4/Stage 12.
+
+---
+
 ## `tagged_context.json`
 
-Produced by Stage 5.
+Produced by Stage 7.
 
 ```json
 {
@@ -75,7 +133,7 @@ Produced by Stage 5.
 
 ## `cv_tailoring_notes.json`
 
-Produced by Stage 9.
+Produced by Stage 11.
 
 ```json
 {
@@ -92,15 +150,16 @@ Produced by Stage 9.
 }
 ```
 
-`overclaim_risk` uses the same 1–5 scale as the judge record's
-`overclaim_risk`-equivalent scoring, for one consistent audit trail across
-the essay and CV paths.
+`overclaim_risk` is scored only here (Stage 11) — the essay side of the
+same concern is a plain drafting-time consistency instruction in
+`drafting_guide.md` (Stage 4), not a parallel scored field in the judge
+record.
 
 ---
 
 ## Judge record
 
-Produced by Stage 11. One file per (variant, judge):
+Produced by Stage 13. One file per (variant, judge):
 `output/evals/genN/vXX_<judge>.json`.
 
 ```json
@@ -130,7 +189,7 @@ Produced by Stage 11. One file per (variant, judge):
 
 ## `round_config.json`
 
-Produced by Stage 14.
+Produced by Stage 16.
 
 ```json
 {
