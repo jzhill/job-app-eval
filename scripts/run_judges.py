@@ -8,6 +8,7 @@ variant covering the whole application package (all question drafts +
 the tailored CV), not one evaluation per question.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -43,6 +44,17 @@ Output ONLY a JSON object:
 "overall_candidate_feedback": "..."}}
 Score every JD component and every question given, even briefly."""
 
+REQUIRED_KEYS = [
+    "component_scores", "question_scores", "cv_evaluation", "style_fidelity",
+    "overall_score", "overall_outcome", "overall_candidate_feedback",
+]
+
+
+def validate(record: dict) -> None:
+    missing = [k for k in REQUIRED_KEYS if k not in record]
+    if missing:
+        raise ValueError(f"missing required key(s): {missing}")
+
 
 def main():
     if "--gen" not in sys.argv:
@@ -77,8 +89,17 @@ def main():
         )
         for judge in JUDGES:
             system = SYSTEM_TEMPLATE.format(persona=judge["persona"])
-            result = call(system, user, model=judge["model"], effort="high", max_tokens=16000)
-            record = parse_json(result)
+            max_attempts = 5
+            for attempt in range(max_attempts):
+                result = call(system, user, model=judge["model"], effort="high", max_tokens=16000)
+                try:
+                    record = parse_json(result)
+                    validate(record)
+                    break
+                except (json.JSONDecodeError, ValueError) as e:
+                    if attempt == max_attempts - 1:
+                        raise
+                    print(f"  {judge['id']} on {variant_id}: {e}, retrying ({attempt + 1}/{max_attempts - 1})...")
             record["variant_id"] = variant_id
             record["judge_id"] = judge["id"]
             write_json(evals_dir / f"{variant_id}_{judge['id']}.json", record)
