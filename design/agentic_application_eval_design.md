@@ -165,8 +165,9 @@ and lower voice-sensitivity than an essay. Schema:
 variant is one coherent bundle of answers across *all* questions, drafted
 together so they don't repeat each other.
 
-- **Exploration mode** — Jeremy and the agent agree on 5–10 genuinely
-  distinct strategic/rhetorical axes for the round first (§4), grounded
+- **Exploration mode** — Jeremy and the agent agree on a handful of
+  genuinely distinct strategic/rhetorical axes for the round first (§4 —
+  3–4 for a first round, more only if warranted), grounded
   in what's actually distinctive in the material, not a generic grid.
   Each variant is then drafted by its own **forked subagent** — full
   context bundle plus its one axis, no visibility into other forks' output
@@ -294,15 +295,17 @@ stage (9) — it's human-authored, like `input/essay/`, not agent-generated.
 
 ## 4. Variant count and round mode
 
-Default **5–10 variants** for an exploration round — narrower on purpose,
-per Jeremy's goal of spending less time agonizing over the text than
-maximizing exploration breadth. Each round is explicitly either
-exploration (variant tournament + judge panel) or convergence (single
-refined draft, no panel), chosen by Jeremy at Stage 15.
+Default **3–4 variants** for a *first* exploration round — narrower than
+the 5–10 ceiling, since gen1 defaulted to 7 and 6 of those 7 landed
+statistically indistinguishable on overall score, evidence that the top
+of the range doesn't reliably buy more signal. Each round is explicitly
+either exploration (variant tournament + judge panel) or convergence
+(single refined draft, no panel), chosen by Jeremy at Stage 15.
 
-Widen only if a round's `summary.md` shows scores bunched close together
-across many variants (the axes picked aren't discriminating) — that's the
-signal to add more axes/variants, not a default starting assumption.
+Widen (up to 5–10) only if a round's `summary.md` shows scores bunched
+close together across many variants (the axes picked aren't
+discriminating) — that's the signal to add more axes/variants, not a
+default starting assumption.
 
 ---
 

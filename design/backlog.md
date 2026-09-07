@@ -8,6 +8,45 @@ mid-cycle. Newest entries at the top.
 
 ---
 
+## 2026-09-07 — Judge-output key validation added; variant-count default flipped (backlog #3, part of #2)
+
+**Resolved — #3 (judge-output key validation):** `scripts/run_judges.py`
+now validates `component_scores`/`question_scores` keys against the
+actual ids in `jd_components.json`/`form_questions.json` (exact set
+match, both extra and missing ids reported) in the same retry loop as
+the JSON-syntax/required-key checks, instead of silently accepting a
+near-miss key that `aggregate.py` would then quietly drop. Combined with
+the marking guide's existing id-verbatim instruction (Stage 3), this
+should both prevent and catch the drift gen1 saw (a duplicate-looking
+key, one missing the `mission_` prefix).
+
+**Resolved — variant-count default (part of #2):** design doc §4's
+default flipped from "5–10" to "3–4 for a first round, widen only if
+`summary.md` shows scores bunched close together" — gen1 defaulted to 7
+and 6 of those 7 landed statistically indistinguishable, direct evidence
+the top of the range doesn't reliably buy more signal.
+
+**Resolved — #2's other half, `cv_evaluation` decoupling: decided not
+to.** Checked the actual gen1 eval files before deciding rather than
+reasoning from the design doc's description alone: `cv_evaluation`
+scores for the same judge are **not** identical across variants (ranged
+3–4 across v01–v07 for `judge_skeptical_senior`, with substantively
+different comment wording each time), and one variant's comment
+explicitly said the CV read as "consistent with the answers" — direct
+evidence the judge was reading the CV in light of that specific essay,
+not scoring it in isolation. `cv_evaluation` is also never consumed by
+`aggregate.py`'s numeric rollup at all (checked `aggregate.py` directly),
+so decoupling would only ever have saved generation cost, never rollup
+complexity. Between the now-small marginal cost (post comment-length-cap)
+and the real risk of throwing away a genuine cross-referencing signal the
+"whole package, not siloed" principle (design doc §1) is supposed to
+produce, decoupling isn't worth it. Closing this out as resolved, not
+just deferred — the original framing ("re-scores the identical CV") was
+itself the thing that turned out to be wrong once checked against real
+output.
+
+---
+
 ## 2026-09-07 — Judge panel parallelized + concrete comment-length caps (backlog #2)
 
 **Resolved, partially:** `scripts/run_judges.py` now runs its

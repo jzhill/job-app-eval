@@ -60,20 +60,43 @@ REQUIRED_KEYS = [
 ]
 
 
-def validate(record: dict) -> None:
+def extract_valid_ids(components: dict, questions: dict) -> tuple[set, set]:
+    component_ids = {item["id"] for category in components.values() for item in category}
+    question_ids = {q["id"] for q in questions["questions"]}
+    return component_ids, question_ids
+
+
+def validate(record: dict, valid_component_ids: set, valid_question_ids: set) -> None:
     missing = [k for k in REQUIRED_KEYS if k not in record]
     if missing:
         raise ValueError(f"missing required key(s): {missing}")
 
+    component_keys = set(record["component_scores"].keys())
+    if component_keys != valid_component_ids:
+        raise ValueError(
+            "component_scores keys don't match jd_components.json -- "
+            f"extra: {sorted(component_keys - valid_component_ids)}, "
+            f"missing: {sorted(valid_component_ids - component_keys)}"
+        )
 
-def judge_variant(variant_id: str, user: str, judge: dict, marking_guide: str) -> dict:
+    question_keys = set(record["question_scores"].keys())
+    if question_keys != valid_question_ids:
+        raise ValueError(
+            "question_scores keys don't match form_questions.json -- "
+            f"extra: {sorted(question_keys - valid_question_ids)}, "
+            f"missing: {sorted(valid_question_ids - question_keys)}"
+        )
+
+
+def judge_variant(variant_id: str, user: str, judge: dict, marking_guide: str,
+                   valid_component_ids: set, valid_question_ids: set) -> dict:
     system = SYSTEM_TEMPLATE.format(persona=judge["persona"], marking_guide=marking_guide)
     max_attempts = 5
     for attempt in range(max_attempts):
         result = call(system, user, model=judge["model"], effort="high", max_tokens=16000)
         try:
             record = parse_json(result)
-            validate(record)
+            validate(record, valid_component_ids, valid_question_ids)
             record["variant_id"] = variant_id
             record["judge_id"] = judge["id"]
             return record
@@ -103,6 +126,7 @@ def main():
 
     components = read_json(OUTPUT / "jd_components.json")
     questions = read_json(OUTPUT / "form_questions.json")
+    valid_component_ids, valid_question_ids = extract_valid_ids(components, questions)
     cv_path = OUTPUT / "cv_tailored.md"
     cv_text = read_text(cv_path) if cv_path.exists() else "(no tailored CV yet)"
 
@@ -130,7 +154,8 @@ def main():
     failures = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         futures = {
-            pool.submit(judge_variant, variant_id, user, judge, marking_guide): (variant_id, judge["id"])
+            pool.submit(judge_variant, variant_id, user, judge, marking_guide,
+                        valid_component_ids, valid_question_ids): (variant_id, judge["id"])
             for variant_id, user, judge in tasks
         }
         for future in as_completed(futures):

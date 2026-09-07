@@ -197,10 +197,15 @@ this design also called for varying temperature across judges — dropped,
 since the Messages API has no temperature/sampling-randomness parameter
 to vary; persona and model are the actual diversity levers now.
 
-`cv_evaluation` scores the same `cv_tailored.md` for every variant in a
-round, since the CV isn't varied per-variant — minor duplication across
-judge calls, acceptable as-is (revisit if cost becomes a bigger concern —
-see `backlog.md`).
+`cv_evaluation` scores `cv_tailored.md` fresh for every variant in a
+round, even though the CV file itself doesn't vary per-variant. This once
+read as pure duplication worth eliminating for cost — but checking real
+gen1 output showed the scores/comments aren't actually identical across
+variants (a judge's read of the CV shifts with which essay accompanies
+it, exactly per the "whole package, not siloed" principle), and
+`cv_evaluation` is never consumed by `aggregate.py`'s numeric rollup
+regardless. Decided not to decouple — see `backlog.md` (2026-09-07) for
+the full reasoning.
 
 ---
 
