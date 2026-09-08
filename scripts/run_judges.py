@@ -2,8 +2,8 @@
 
 Usage: python scripts/run_judges.py --gen 1
 
-Only runs in exploration-mode rounds -- skipped (with a message) if the
-round's config says convergence. Each judge produces one evaluation per
+Skipped (with a message) if the round's config says convergence -- runs
+for exploration and comparison modes alike. Each judge produces one evaluation per
 variant covering the whole application package (all question drafts +
 the tailored CV), not one evaluation per question. Judge calls run
 concurrently (bounded thread pool) -- each (variant, judge) call is fully
@@ -11,6 +11,7 @@ independent, no shared state or data dependency between them.
 """
 
 import json
+import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -69,6 +70,28 @@ REQUIRED_KEYS = [
     "component_scores", "section_assessments", "question_scores", "cv_evaluation",
     "vibe_score", "overall_outcome", "overall_assessment", "candidate_feedback",
 ]
+
+
+SECTION_HEADING = re.compile(r"^##\s*\[(\w+)\][^\n]*$", re.MULTILINE)
+
+
+def parse_answer_sections(text: str, valid_question_ids: set) -> dict[str, str]:
+    """Split a single-file draft (application.md) into {question_id: text}
+    by its '## [question_id] ...' headings -- deterministic, code-side
+    parsing rather than leaving the id/text mapping to the judge."""
+    matches = list(SECTION_HEADING.finditer(text))
+    sections = {}
+    for i, m in enumerate(matches):
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        sections[m.group(1)] = text[start:end].strip()
+    found = set(sections)
+    if found != valid_question_ids:
+        raise ValueError(
+            "draft file's '## [question_id]' headings don't match form_questions.json -- "
+            f"extra: {sorted(found - valid_question_ids)}, missing: {sorted(valid_question_ids - found)}"
+        )
+    return sections
 
 
 def extract_valid_ids(components: dict, questions: dict) -> tuple[set, set]:
@@ -159,17 +182,14 @@ def main():
     cv_text = read_text(cv_path) if cv_path.exists() else "(no tailored CV yet)"
 
     drafts_dir = gen_dir("drafts", gen)
-    variant_dirs = sorted(p for p in drafts_dir.iterdir() if p.is_dir())
+    draft_paths = sorted(drafts_dir.glob("*.md"))
 
     evals_dir = gen_dir("evals", gen)
 
     tasks = []
-    for variant_dir in variant_dirs:
-        variant_id = variant_dir.name
-        answers = {
-            p.stem: read_text(p)
-            for p in variant_dir.glob("*.md")
-        }
+    for draft_path in draft_paths:
+        variant_id = draft_path.stem
+        answers = parse_answer_sections(read_text(draft_path), valid_question_ids)
         user = (
             f"## Job posting (as the candidate would have read it)\n{job_posting}\n\n"
             f"## JD components (structured decomposition of the posting above, for scoring ids)\n{components}\n\n"

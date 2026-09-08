@@ -8,6 +8,64 @@ mid-cycle. Newest entries at the top.
 
 ---
 
+## 2026-09-07 — Reflection: would a finer judge scale (e.g. /20) have distinguished q_why_anthropic?
+
+**Raised by Jeremy**, after the gen4 comparison round scored all four
+`q_why_anthropic` variants identically (mean 4.67/5, one judge giving 4,
+two giving 5, every time) despite the `r4v1` interview-driven rewrite
+drawing a qualitatively distinct comment from at least one judge
+("distinctive clinician's framing... slight drift toward foundational
+model work"). **A note for reflection, not a task** — Jeremy was explicit
+this doesn't need action.
+
+Worth being skeptical that widening the scale alone would surface real
+distinction: the judge already registered something different in the
+free-text comment without it moving the 1-5 score, which cuts against
+"the scale was just too coarse" as the explanation. Asking an LLM judge
+(like a human rater) for more precision than it actually has tends to
+manufacture noise that looks like signal rather than reveal hidden signal
+-- and gen1's own finding (6 of 7 variants statistically indistinguishable)
+is consistent with these being genuinely close, not under-resolved.
+
+**If this gets picked up later**, comparative/pairwise judging ("which of
+these two is stronger, and why") is a more likely fix than a wider
+absolute scale -- better-evidenced (human-rater and LLM-judge literature
+both) for discriminating between close variants than adding resolution to
+an independent per-variant score.
+
+---
+
+## 2026-09-07 — Recognisable AI tone/style persists despite voice_profile.md; humanizing approach deferred
+
+**Raised by Jeremy**, on first read of gen3 v01: even with `voice_profile.md`
+(Stage 10) informing drafting, the output still reads with recognisable AI
+tone/style, not genuinely his voice. Floated idea: build a dedicated
+"humanizing" skill/reference from curated real-world (non-AI) writing
+examples, distilled into patterns to apply during drafting — a bigger
+investment than `voice_profile.md`'s current approach.
+
+**Decision: deferred, not building now.** Two options were on the table
+(lightweight guidance added directly to `voice_profile.md`/
+`drafting_guide.md` naming specific AI-tone tics, vs. the dedicated skill)
+— Jeremy chose to defer both and prioritize getting `q_why_anthropic`
+right first via a dedicated interview (see `rounds/gen3/direction.md`),
+not spend a session on tone right now.
+
+**Not yet decided — options to consider when this gets picked up:**
+- Lightweight first: name the actual recurring tics (em-dash pileups,
+  triadic phrasing, "it's not just X, it's Y" constructions, etc.)
+  explicitly in `voice_profile.md`/`drafting_guide.md` and see if that
+  alone is enough.
+- Dedicated skill: gather curated examples (AI-tone vs. genuinely human
+  counterexamples), distill into a reusable reference, apply as an
+  explicit drafting pass — worth it only if the lightweight fix turns out
+  insufficient.
+- Worth checking against real output before either: is this actually
+  still present in gen4 after the q_why_anthropic rewrite and repetition
+  fix, or does some of it resolve as a side effect of those changes?
+
+---
+
 ## 2026-09-07 — Subagent tried to write a scratch file outside the working directory
 
 **Raised by Jeremy**, mid-Stage-14: the `gen2-synthesis` fork (reading all
@@ -52,30 +110,36 @@ prompted that finding (added `section_assessments` and the fuller
 4-question/CV enumeration), so the underlying complexity concern was
 never actually resolved, just worked around again.
 
-**Separately, a structural idea for draft generation:** Jeremy noticed
-draft variants sometimes show strong content overlap, and floated whether
-Stage 12 should produce **one cohesive `.md` document per variant** (all
-four answers as a single continuous composition) instead of four
-separately generated files, on the theory that a model drafting one
-unified document naturally reasons about repetition/flow across the
+**Separately, a structural idea for draft generation, since resolved:**
+Jeremy noticed draft variants sometimes show strong content overlap, and
+floated whether Stage 12 should produce **one cohesive `.md` document per
+variant** (all four answers as a single continuous composition) instead
+of four separately generated files, on the theory that a model drafting
+one unified document naturally reasons about repetition/flow across the
 whole thing, rather than needing `drafting_guide.md`'s cohesion
 instruction to compensate for four independently-generated pieces after
-the fact. Not scoped or decided — would touch the draft file format
-(`data_schemas.md`), Stage 12's per-question-boundary framing, and how
-`run_judges.py` reads `drafts/genN/vXX/*.md` (currently one file per
-question via `variant_dir.glob("*.md")`).
+the fact.
 
-**Not yet decided — options to consider when this gets scoped properly:**
+**Resolved 2026-09-07 (part of the round-4 comparison/edited-variant
+feature work — see `rounds/gen3/direction.md` and `rounds/index.md`):**
+implemented as designed. Stage 12 now writes one `application.md` per
+variant with `## [question_id] ...`-tagged headings per question;
+`scripts/run_judges.py` parses those headings back into a
+`{question_id: text}` map deterministically (code-side, not left to the
+judge to infer) and fails loudly if the headings found don't exactly
+match `form_questions.json`'s ids — same validate-early pattern as the
+existing `component_scores`/`question_scores` key checks. Applies from
+gen4 onward; gen1–3 stay in the old per-question-file format (already
+judged, not reprocessed). See `data_schemas.md` and design doc Stage 12.
+
+**Still open:**
 - Whether the judge schema itself needs simplifying (fewer scored
   fields, or splitting one mega-call into smaller calls per section) vs.
-  just continuing to raise token budgets/streaming as symptoms recur.
-- Whether a single-document draft format is actually more reliable for
-  cohesion than the current four-file format plus an explicit cohesion
-  instruction — untested hypothesis, not yet compared against the
-  current approach's actual failure rate.
-- If a single-document format were adopted, how Stage 13 would need to
-  change to still score each question distinctly (parsing sections back
-  out of one file, or asking the judge to do that itself).
+  just continuing to raise token budgets/streaming as symptoms recur —
+  the single-document format doesn't address this half.
+- Whether the single-document format actually reduces cross-answer
+  repetition in practice — untested hypothesis, worth checking against
+  gen4's real output once drafted, not assumed from the design alone.
 
 ---
 

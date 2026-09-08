@@ -130,14 +130,24 @@ design doc / `history_and_rationale.md`, not here.
 
 12. **Draft generation** -- determine the round number and mode from
     `rounds/genN/round_config.json` (or default: gen 1, exploration, per
-    design doc §4, if nothing exists). For **exploration mode**: propose a
-    set of genuinely distinct axes for this round grounded in the actual
-    material (not a generic grid) and **agree them with Jeremy before
-    drafting anything** -- then fork one subagent per variant, each with
-    the full context bundle (including `drafting_guide.md`) plus its one
-    axis, writing `drafts/genN/vXX/` directly. For **convergence mode**:
-    write the single directed draft straight in this conversation,
-    incorporating the carried-forward direction.
+    design doc §4, if nothing exists). Every variant is written as one
+    `drafts/genN/<variant_id>.md` file (all questions, each under a
+    `## [q<question_id>] ...` heading -- see `data_schemas.md`), no
+    per-variant folder, not one file per question. For **exploration
+    mode**: propose a set of genuinely distinct axes for this round
+    grounded in the actual material (not a generic grid) and **agree them
+    with Jeremy before drafting anything** -- then fork one subagent per
+    variant, each with the full context bundle (including
+    `drafting_guide.md`) plus its one axis, writing its `<variant_id>.md`
+    directly. For **convergence mode**: write the single directed draft
+    straight in this conversation, incorporating the carried-forward
+    direction. For **comparison mode**: assemble the variant set directly
+    rather than drafting fresh -- copy a prior variant's `.md` unmodified
+    for a carried-forward baseline, apply Jeremy's hand edits or an
+    external tool's output for the others, and draft any genuinely new
+    variant per its direction; write each variant's `<variant_id>.meta.json`
+    with `production_method` and `derived_from` set accordingly
+    (`data_schemas.md`).
 
 **Phase 4 -- Naive HR screening**
 

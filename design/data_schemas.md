@@ -118,6 +118,70 @@ Read by every Stage 12 forked variant subagent, alongside
 
 ---
 
+## `output/drafts/genN/<variant_id>.md`
+
+Produced by Stage 12. One file per variant — every question's answer in
+one document, each under a heading tagged with its question id so
+`scripts/run_judges.py` can split it back into a `{question_id: text}`
+map deterministically (not left to the judge to infer). No per-variant
+folder — the `.md` and its `.meta.json` sidecar (below) sit directly in
+`output/drafts/genN/`, since a variant is now exactly those two files:
+
+```markdown
+## [q_why_anthropic] Why do you want to work at Anthropic?
+
+<answer text>
+
+## [q_ai_fluency] Describe your AI fluency
+
+<answer text>
+```
+
+Heading format is exactly `## [<question_id>] <anything>` — the bracketed
+id is what's parsed; the rest is free text for readability. One heading
+per id in `form_questions.json`, no more, no fewer — `run_judges.py`
+raises if the set of ids found doesn't match exactly, same as the
+existing `question_scores`/`component_scores` key validation.
+
+---
+
+## `output/drafts/genN/<variant_id>.meta.json`
+
+Produced by Stage 12, alongside `<variant_id>.md`. `variant_id` is the
+shared filename stem — an opaque string, not required to follow a `vNN`
+pattern (a comparison round might use lineage-carrying ids like
+`r3v1-jh`).
+
+```json
+{
+  "variant_id": "v01",
+  "mode": "convergence",
+  "rationale": "Directed convergence draft per output/rounds/gen2/direction.md...",
+  "model": "claude-sonnet-5",
+  "questions_answered": ["q_ai_fluency", "q_low_resource_experience", "q_why_anthropic", "q_cover_letter_additional"]
+}
+```
+
+Comparison-mode variants (§4 of the design doc) add two fields describing
+how the variant came to exist, since it wasn't drafted fresh:
+
+```json
+{
+  "variant_id": "r3v1-jh",
+  "mode": "comparison",
+  "production_method": "Jeremy's own hand edit",
+  "derived_from": "gen3/v01",
+  "rationale": "Trimmed the repeated colleagues/admiration passage, tightened q_why_anthropic's closing paragraph.",
+  "questions_answered": ["q_ai_fluency", "q_low_resource_experience", "q_why_anthropic", "q_cover_letter_additional"]
+}
+```
+
+`production_method` is one of: `"unmodified copy"`, `"Jeremy's own hand
+edit"`, `"external tool"` (name the tool), or `"freshly generated"` (the
+normal case for exploration/convergence — `derived_from` is omitted then).
+
+---
+
 ## `tagged_context.json`
 
 Produced by Stage 7.
@@ -222,4 +286,9 @@ Produced by Stage 16.
 }
 ```
 
-`mode` is one of `exploration` or `convergence` (see design doc §4).
+`mode` is one of `exploration`, `convergence`, or `comparison` (see design
+doc §4). For a comparison round, `retain_verbatim`/`drop` don't really
+apply the same way — describe the intended variant set instead (e.g. which
+prior variant to carry forward unmodified, which to hand-edit, which to
+run through an external tool, and what direction a freshly-generated
+variant should follow).

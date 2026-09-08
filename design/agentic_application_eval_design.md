@@ -186,12 +186,32 @@ together so they don't repeat each other.
 - **Convergence mode** — one directed rewrite, done collaboratively
   in-conversation, incorporating the prior round's direction and retained
   phrases. No fork, no panel.
+- **Comparison mode** — variants share one already-converged base but
+  differ in how they were *produced*, not in strategic axis: e.g. the
+  base draft carried forward unmodified, Jeremy's own hand edit of it, a
+  pass through an external humanizing tool, and a freshly regenerated
+  draft incorporating the round's direction. No forking or in-conversation
+  drafting for the carried-forward/edited variants — they're assembled
+  directly in `output/drafts/genN/` from wherever their content actually
+  comes from. Runs the judge panel exactly like exploration mode (Stage
+  13's gate is simply "not convergence") — the point is comparing
+  production methods, not content strategy.
 
-**Output:** `output/drafts/genN/vXX/q<question_id>.md` + `vXX.meta.json`
-(axis/rationale + which model drafted it — Stage 13 needs at least one
-judge on a different model than this one, to reduce self-preference
-bias). Every variant needs to pass Stage 13's submission-readiness check
-before judging — see below.
+**Output:** one file per variant, `output/drafts/genN/<variant_id>.md` —
+every question's answer in a single document, each under a heading
+tagged with its question id (`## [q<question_id>] <human-readable prompt>`),
+so the whole variant is drafted (and read) as one coherent composition
+rather than four independently-generated pieces that need a separate
+cohesion instruction to compensate. Alongside it,
+`output/drafts/genN/<variant_id>.meta.json` (rationale + which model
+drafted it — Stage 13 needs at least one judge on a different model than
+this one, to reduce self-preference bias — plus, for comparison-mode
+variants, a `production_method` field and which prior variant it derives
+from). No per-variant folder — a variant is exactly these two files.
+`variant_id` is just the shared filename stem and can be anything (`v01`,
+or a lineage-carrying id like `r3v1-jh` for a comparison round) — nothing
+downstream assumes a `vNN` pattern. Every variant needs to pass Stage
+13's submission-readiness check before judging — see below.
 
 ### Phase 4 — Naive HR screening (Stage 13)
 
@@ -207,7 +227,8 @@ money on a defect a plain read would catch (the gen1 pilot ran an
 unfilled CV placeholder through 21 judge calls before this check
 existed — see `backlog.md`). Checklist: [`CLAUDE.md`](../CLAUDE.md#submission-ready-checklist).
 
-**Only runs in exploration-mode rounds.** `python scripts/run_judges.py
+**Runs in exploration- and comparison-mode rounds; skipped for
+convergence.** `python scripts/run_judges.py
 --gen N` — the pipeline's one scripted, isolated Anthropic API call;
 judges must never share context with the session that produced the
 material they're evaluating. Every (variant, judge) call is independent,
@@ -321,9 +342,12 @@ stage (9) — it's human-authored, like `input/essay/`, not agent-generated.
 Default **3–4 variants** for a *first* exploration round — narrower than
 the 5–10 ceiling, since gen1 defaulted to 7 and 6 of those 7 landed
 statistically indistinguishable on overall score, evidence that the top
-of the range doesn't reliably buy more signal. Each round is explicitly
-either exploration (variant tournament + judge panel) or convergence
-(single refined draft, no panel), chosen by Jeremy at Stage 15.
+of the range doesn't reliably buy more signal. Each round is explicitly one of three modes, chosen by Jeremy at Stage
+15: exploration (variant tournament across genuinely distinct strategic
+axes + judge panel), convergence (single refined draft, no panel), or
+comparison (variants sharing one converged base but differing in
+production method — hand edit, external tool, fresh regeneration — also
+judge-panelled, see Stage 12).
 
 Widen (up to 5–10) only if a round's `summary.md` shows scores bunched
 close together across many variants (the axes picked aren't
