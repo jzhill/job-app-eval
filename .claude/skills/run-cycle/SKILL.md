@@ -124,7 +124,8 @@ design doc / `history_and_rationale.md`, not here.
 11. **CV tailoring** -- tailor using everything in `input/cv/` + tagged
     context + JD components + preferences -> `cv_tailored.md` +
     `cv_tailoring_notes.json`. Present the result; not a hard stop, but
-    flag anything that reads as a stretch (design doc §5).
+    flag anything that reads as a stretch against the `claims_checklist`
+    (design doc, Stage 11).
 
 **Phase 3 -- Draft variations**
 

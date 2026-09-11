@@ -13,8 +13,11 @@ independent, no shared state or data dependency between them.
 import json
 import re
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
+import anthropic
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import DEFAULT_MODEL, INPUT, OUTPUT, call, gen_dir, parse_json, read_json, read_text, write_json
@@ -142,7 +145,16 @@ def judge_variant(variant_id: str, user: str, judge: dict, marking_guide: str,
     )
     max_attempts = 5
     for attempt in range(max_attempts):
-        result = call(system, user, model=judge["model"], effort="high", max_tokens=32000)
+        try:
+            result = call(system, user, model=judge["model"], effort="high", max_tokens=32000)
+        except (anthropic.RateLimitError, anthropic.InternalServerError, anthropic.APIConnectionError) as e:
+            if attempt == max_attempts - 1:
+                raise
+            wait = 2 ** attempt
+            print(f"  {judge['id']} on {variant_id}: {type(e).__name__}, "
+                  f"backing off {wait}s ({attempt + 1}/{max_attempts - 1})...")
+            time.sleep(wait)
+            continue
         try:
             record = parse_json(result)
             validate(record, valid_component_ids, valid_question_ids)

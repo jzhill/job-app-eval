@@ -1,38 +1,23 @@
 # job-app-eval
 
-A pipeline that drafts and evaluates a job application (CV + written
+A pipeline that ingests your rough draft, optimises, and evaluates a job application (CV + written
 answers) against a specific job posting, using a multi-judge LLM panel,
-to maximize the chance of being screened in. Full design:
+to maximize the chance of being screened in.
+
+Full design:
 [`design/agentic_application_eval_design.md`](design/agentic_application_eval_design.md).
 
-**Most of this pipeline is not a script you run — it's a conversation
-you have with Claude Code in this folder.** Only the judge-panel step
-(Stage 13) is a separate scripted call to the Anthropic API, because
-that's the one stage whose whole value depends on the judge not having
-seen the conversation that produced the draft it's evaluating. Every
-other stage is something you ask the agent to do directly, with full
-context and room to ask you a clarifying question instead of quietly
-guessing.
+## Usage
+
+1. Drop your content in input/
+2. Save your anthropic API KEY to .env
+3. Run claude in the folder
+4. /run-cycle to initiate
+5. Drafts and evals appear in output/
 
 ## Background
 
-This started as a manual pilot for one specific application (Anthropic's
-Partner Manager, Global Health role): drafting an essay by hand across
-several revisions, then running each version through a naive LLM acting
-as an HR screener. A clear, consistent pattern of findings emerged —
-evidence the naive-screener approach surfaces real signal, not noise —
-which is why this repo formalizes that manual workflow into a repeatable
-pipeline instead of relying on nine ad hoc runs read by hand. There's
-also a second, more pointed reason to build it well: a tool that
-evaluates and improves an application for an AI safety company, built
-using careful, skeptical evaluation methodology, is itself a small
-demonstration of the kind of judgment the role is looking for.
-
-Only code and documentation are public here — `input/` and `output/` are
-both gitignored, full stop. Draft text, judge scores, and the tailored
-CV are the application's actual substance and strategy, not a
-repackaging of public information, so none of it belongs in a public
-repo.
+The idea for this pipeline came while composing an application for a job posting at Anthropic - Partner Manager, Global Health. Aim is to automate what one might otherwise do in a chat window, learn a bit, and submit a reasonable application.
 
 ## Setup
 
@@ -47,42 +32,22 @@ repo.
 
 ## Input files (place in `input/`)
 
-| File/folder | Required? | What it is |
-|---|---|---|
-| `job_posting.md` | Required | Copy-paste the raw text of the job posting, straight from the browser. If the application form's fields are on the same page (common on Greenhouse and similar ATS platforms), paste those too. |
-| `cv/` | Required | One or more CV versions, any format (`.docx`/`.pdf`/`.md`)/filename — the agent reconciles across them when tailoring. |
-| `essay/` | Required | Free-written material, one or more files, any filename — your own words on why this role, relevant experience, motivation. No structure required; the pipeline maps this onto the posting's requirements for you. |
-| `preferences.md` | Optional | How you want the pipeline to weight things — priorities, hard constraints that must never be reverted. |
-| `external_resources.md`, `external_refs/` | Optional | URLs (one per line, with an optional note) or files with relevant background on the employer. |
-| `interview_transcripts/` | Optional | Transcripts/notes from a live interview conversation — one you already had, or one prompted by a brief the agent generates. |
-| `past_drafts/` | Optional | Prior application drafts, **corrected/proofread text only** — used to build a voice profile, along with `input/essay/` content too if that's already polished for this application rather than rough freewriting. Proofread status is what matters, not which folder a file sits in — say so if it's ambiguous. |
+All .gitignored
 
-Everything the pipeline generates lands in `output/`, gitignored the
-same way — see the design doc §3 for the full layout and
+|File/folder|Required?|What it is|
+|-|-|-|
+|`job_posting.md`|Required|Paste raw text from the job posting.|
+|`cv/`|Required|One or more CV versions, any format (`.docx`/`.pdf`/`.md`)|
+|`essay/`|Required|Your own draft application, or essay responding to the application.|
+|`preferences.md`|Optional|How you want the pipeline to weight input context|
+|`external_resources.md`, `external_refs/`|Optional|URLs (one per line, with an optional note) or files|
+|`interview_transcripts/`|Optional|Transcripts/notes from a live agent interview, in which you might explore your motivation and ambition for this role|
+|`past_drafts/`|Optional|Prior application drafts, to build a voice profile|
+
+## Output files (appear in `output/`)
+
+Also .gitignored
+
+Everything the pipeline generates lands in `output/`, see the design doc §3 for the full layout and
 [`data_schemas.md`](design/data_schemas.md) for exact file shapes.
 
-## Usage
-
-Open a terminal in this repo folder, run `claude` to start a Claude Code
-session, make sure your required inputs are in place, and go.
-
-**Guided (recommended):** type `/run-cycle`. This project skill
-(`.claude/skills/run-cycle/SKILL.md`) checks what's already been done,
-confirms your required inputs exist, and walks the whole pipeline in
-order — stopping only at the checkpoints the design calls for (itemization
-review, marking/drafting guide co-creation, context-mapping approval, the
-interview handoff, agreeing draft axes, confirming before it spends real
-API money on the judge panel, and the sniff check). You can stop mid-cycle
-(e.g. to go have the external interview) and pick it back up later; it
-detects where things stand and asks how to proceed.
-
-**Manual (stage by stage):** useful if you only want to redo one stage,
-or prefer to drive each step yourself — just ask the agent for a specific
-stage by name. See the design doc §2 for exactly what each stage needs as
-input and produces, and `data_schemas.md` for exact file shapes. The two
-scripted steps, run directly when you reach them:
-
-```
-python scripts/run_judges.py --gen 1     # Stage 13 — writes output/evals/gen1/
-python scripts/aggregate.py --gen 1      # Stage 14 — writes output/evals/gen1/summary.json + summary.md
-```

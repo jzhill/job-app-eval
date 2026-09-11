@@ -1,43 +1,33 @@
 # Design: Agentic Job-Application Drafting & Evaluation Pipeline
 
 **Goal:** produce the strongest possible application — CV + written
-answers — for a specific job posting, and maximize the probability of
-being screened in. Everything below serves that one goal; nothing here
-is an end in itself.
+answers — for a specific job posting, maximizing the probability of
+being screened in.
 
-A small repo, operated as a live Claude Code session, not a batch script.
-v1 stays single-application/flat (see §3) — the generalization beyond one
-application is in the pipeline's shape, not yet in the folder structure.
+Runs as a live Claude Code session, not a batch script. v1 is
+single-application/flat (§3).
 
-Exact JSON/file shapes for every generated artifact live in
-[`data_schemas.md`](data_schemas.md), not here. Full decision history and
-the reasoning behind anything not obvious from this doc lives in
-[`history_and_rationale.md`](history_and_rationale.md) — this document
-states *what the pipeline does*; that one explains *why it ended up this
-way*.
+- Exact JSON/file shapes: [`data_schemas.md`](data_schemas.md)
+- Decision history and rationale: [`history_and_rationale.md`](history_and_rationale.md)
+- Open issues: [`backlog.md`](backlog.md)
 
 ---
 
 ## 1. Core principle
 
-Score everything against the job description, not a generic rubric — the
-JD is decomposed once (Stage 1) into labeled components, and every
-downstream score, human or judge, ties back to one or more of them.
+Score everything against the job description, not a generic rubric. The
+JD is decomposed once (Stage 1) into labeled components; every downstream
+score ties back to one or more of them.
 
-Naivety is scarce: only Stage 13 (the judge panel) needs to be blind to
-how the material was produced — it's the only stage whose value depends
-on the executor not having been part of the conversation that produced
-what it's judging. Every other stage runs directly in this Claude Code
-session, in conversation with Jeremy, because those stages benefit from
-full context and the ability to ask a question instead of guessing. (Why
-the line falls exactly there, not somewhere else:
-[`history_and_rationale.md`](history_and_rationale.md#naivety-vs-context).)
+Only Stage 13 (the judge panel) runs isolated from the drafting
+conversation — its value depends on the executor not having produced
+what it's judging. Every other stage runs directly in this session, with
+full context and the ability to ask a clarifying question.
 
-Jeremy stays in the loop at three points by design: approving context
-mapping (Stage 7), participating directly in the reflective interview
-(Stage 8), and doing the sniff check + giving direction after each round
-(Stage 15). The agent drafts and prepares; a naive panel scores; neither
-decides alone.
+The applicant checkpoints at three points: approving context mapping
+(Stage 7), the reflective interview (Stage 8), and the sniff check +
+direction after each round (Stage 15). The agent drafts and prepares; a
+naive panel scores; neither decides alone.
 
 ---
 
@@ -52,120 +42,99 @@ Phase 5 — Aggregate & understand      Stages 14–15
 Phase 6 — Iterate                     Stage 16   → back to Phase 2 or 3
 ```
 
-Only Stage 13 is a separate script (`scripts/run_judges.py`, plus the
-`_common.py` Anthropic SDK helper it shares with `scripts/aggregate.py`).
-Every other stage is executed by the Claude Code agent directly, so the
-pipeline can be picked up at any stage in a fresh conversation.
+Only Stage 13 is a separate script (`scripts/run_judges.py`, sharing
+`_common.py` with `scripts/aggregate.py`). Every other stage runs as
+direct agent reasoning — resumable at any stage in a fresh conversation.
 
 ### Phase 1 — Process the job post (Stages 1–4)
 
-All four stages here derive purely from the job posting, before any of
-Jeremy's personal material enters the picture.
+Derived purely from the job posting, before any personal material enters.
 
 #### Stage 1 — JD Decomposition
-**Input:** `input/job_posting.md` (Jeremy pastes the raw posting text).
-Itemize → `output/jd_itemised.md` → **Jeremy verifies against the live
-posting** → decompose into four categories (required qualifications,
-preferred qualifications, core responsibilities, mission signals), each
-item keeping a short id → `output/jd_components.json`, **reviewed/
-hand-edited by Jeremy**. Schema: [`data_schemas.md`](data_schemas.md#jd_componentsjson).
+`input/job_posting.md` (pasted verbatim) → itemize → `output/jd_itemised.md`
+→ **applicant verifies against the live posting** → decompose into four
+categories (required qualifications, preferred qualifications, core
+responsibilities, mission signals), each item with a short id →
+`output/jd_components.json`, **reviewed/hand-edited by the applicant**.
+Schema: [`data_schemas.md`](data_schemas.md#jd_componentsjson).
 
 #### Stage 2 — Form Decomposition
-**Input:** usually the same posting (form fields are typically on the
-same ATS page). Itemize → `output/form_itemised.md` → **Jeremy verifies**
-→ purely structural facts (id, exact prompt text, limit, required) →
-`output/form_questions.json` — deliberately doesn't pre-assign JD
-components to a question; that mapping happens at Stage 12. Schema:
-[`data_schemas.md`](data_schemas.md#form_questionsjson).
+Usually the same posting (ATS form fields on the same page). Itemize →
+`output/form_itemised.md` → **applicant verifies** → structural facts
+only (id, exact prompt text, limit, required) →
+`output/form_questions.json`. No JD-component mapping yet — that happens
+at Stage 12. Schema: [`data_schemas.md`](data_schemas.md#form_questionsjson).
 
 #### Stage 3 — Marking Guide Co-Creation
-**Input:** Stages 1–2's outputs. Co-created live with Jeremy (same
-checkpoint style as Stage 7) → `output/marking_guide.md`: a general 1–5
-score-anchor rubric for required/preferred qualifications, core
-responsibilities, questions, and the CV (`mission_signals` items are
-context only, not scored individually), a per-section ≤40-word
-qualitative synopsis requirement, an instruction to use ids verbatim, a
-rule connecting the independent holistic 0–100 `vibe_score` to
-`overall_outcome`, and a comment-length cap (≤40 words per component/
-question/CV/section comment, ≤100 words each for the two overall text
-fields — a starting default, not fixed). `scripts/run_judges.py` requires
-this file to exist and splices it into the judge system prompt — a hard
-precondition for Stage 13, not an optional nicety. Expected sections:
-[`data_schemas.md`](data_schemas.md#marking_guidemd).
+Co-created live with the applicant → `output/marking_guide.md`: a 1–5
+score-anchor rubric per component/question/CV, a per-section ≤40-word
+synopsis requirement, an id-verbatim instruction, a rule connecting the
+0–100 `vibe_score` to `overall_outcome`, and comment-length caps (≤40
+words per component/question/CV/section comment, ≤100 words for each
+overall text field). Required by `run_judges.py` — Stage 13 fails loudly
+without it. Expected sections: [`data_schemas.md`](data_schemas.md#marking_guidemd).
 
 #### Stage 4 — Drafting Guide Co-Creation
-**Input:** same as Stage 3. Co-created live with Jeremy →
-`output/drafting_guide.md`: each form question's distinct content
-boundary against the others, a whole-variant cohesion requirement (every
-answer + the CV reads as one coordinated case), and the consistency check
-that any claim about Jeremy's own experience must not exceed what
-`cv_tailored.md`/`tagged_context.json` support. This is the essay side of
-the pipeline's overclaim guard (§5). Read by every Stage 12 drafting fork
-alongside `voice_profile.md`. Expected sections:
-[`data_schemas.md`](data_schemas.md#drafting_guidemd).
+Co-created live with the applicant → `output/drafting_guide.md`: each
+form question's distinct content boundary, a whole-variant cohesion
+requirement (every answer + the CV reads as one coordinated case), and a
+consistency check — no essay claim about the applicant's own experience
+may exceed what `cv_tailored.md`/`tagged_context.json` support. Read by
+every Stage 12 drafting fork alongside `voice_profile.md`. Expected
+sections: [`data_schemas.md`](data_schemas.md#drafting_guidemd).
 
 ### Phase 2 — Import personal context (Stages 5–11)
 
 #### Stage 5 — Essay Response Capture
-Jeremy free-writes into `input/essay/` — any number of files, any
-filename, fully unstructured. No mapping required of him; that's Stage
-7's job.
+The applicant free-writes into `input/essay/` — any number of files, any
+filename, unstructured. Mapping happens at Stage 7.
 
 #### Stage 6 — External Reference Ingestion *(optional)*
 Agent digests `input/external_resources.md` (URLs) / `input/external_refs/`
 (files) → `output/external_references.md`: source, summary, why flagged.
-Grounding/color about the employer — never treated as a claim about
-Jeremy (the overclaim guard applies only to claims about him).
+Grounding about the employer only — never usable to support a personal
+claim (Stage 11).
 
 #### Stage 7 — Context Mapping
 Maps every essay fragment + external reference onto JD components/form
 questions, tagging confidence and `origin`
 (`essay_response`/`interview`/`external_reference`) →
-`output/tagged_context.json` (+ `.md` rendering for review). **Jeremy
-checkpoint** — approves or corrects, low-confidence fragments flagged
-first. `origin` matters: only `essay_response`/interview-derived
-fragments can support a CV claim about Jeremy (Stage 11) — an
-`external_reference` fragment never can. Schema:
+`output/tagged_context.json` (+ `.md` rendering). **Checkpoint** — the
+applicant approves or corrects, low-confidence fragments flagged first.
+Only `essay_response`/interview-derived fragments can support a CV claim
+(Stage 11); `external_reference` fragments never can. Schema:
 [`data_schemas.md`](data_schemas.md#tagged_contextjson).
 
 #### Stage 8 — Reflective Interview
 Always runs, every round. Agent generates a portable brief
-(`output/interview_brief.md`); the actual conversation happens in an
-external voice-mode app (Claude Code has no voice interface) — Jeremy has
-it there, drops the transcript into `input/interview_transcripts/`, agent
+(`output/interview_brief.md`); the conversation itself happens in an
+external voice-mode app (Claude Code has no voice interface). The
+applicant drops the transcript into `input/interview_transcripts/`; agent
 ingests → `output/interview_report.md`, with a separated verbatim-quotes
-section flagged for direct reuse in drafting. Jeremy is an active
-participant here, not a passive input source. Quotes reused later as a
-Stage 10 voice sample still need the same light grammar pass as any other
-sample first.
+section for direct reuse in drafting. Quotes reused as a Stage 10 voice
+sample still need the same light grammar pass as any other sample.
 
 #### Stage 9 — Preferences File
-Jeremy writes `input/preferences.md` directly — how to weight things
-(not facts about him), durable across rounds. Per-round tactical notes
-belong in Stage 15's `direction.md` instead, so this file doesn't
-accumulate noise.
+The applicant writes `input/preferences.md` directly — how to weight
+things, durable across rounds. Per-round tactical notes go in Stage 15's
+`direction.md` instead.
 
 #### Stage 10 — Voice Profiling *(optional, needs at least one proofread source)*
-One-shot distillation — not a loop — from corrected/proofread source
-text only, never raw dictated/transcribed originals →
-`output/voice_profile.md`, a fixed input to every Stage 12 call, not
-regenerated per variant/round. Source is normally `input/past_drafts/`,
-but `input/essay/` content counts too if it's actually already polished
-for this application rather than rough freewriting — proofread status is
-the real criterion, not which folder a file sits in. If it's unclear
-which applies, ask Jeremy rather than assuming from folder location
-alone.
+One-shot distillation from corrected/proofread source text only, never
+raw dictated/transcribed originals → `output/voice_profile.md`, a fixed
+input to every Stage 12 call. Source is normally `input/past_drafts/`,
+but `input/essay/` content counts too if already proofread — proofread
+status is the criterion, not folder location. Ask the applicant if
+unclear.
 
 #### Stage 11 — CV Tailoring
 Reconciles every file in `input/cv/` against JD components + tagged
 context + preferences → `output/cv_tailored.md` (reordered/re-emphasized,
 same structure as the source) + `output/cv_tailoring_notes.json` (change
 log + a `claims_checklist` tracing every claim to a source fragment,
-each scored 1–5 for overclaim risk). Together with Stage 4's consistency
-check, this is the pipeline's entire overclaim guard (§5) — deliberately
-single-pass, not a variant tournament, since CVs are factual/structured
-and lower voice-sensitivity than an essay. Schema:
-[`data_schemas.md`](data_schemas.md#cv_tailoring_notesjson).
+each scored 1–5 for risk of overstating it). Single-pass, not a variant
+tournament — CVs are factual/structured, lower voice-sensitivity than an
+essay. Schema: [`data_schemas.md`](data_schemas.md#cv_tailoring_notesjson).
 
 ### Phase 3 — Draft variations (Stage 12)
 
@@ -175,128 +144,90 @@ and lower voice-sensitivity than an essay. Schema:
 variant is one coherent bundle of answers across *all* questions, drafted
 together so they don't repeat each other.
 
-- **Exploration mode** — Jeremy and the agent agree on a handful of
-  genuinely distinct strategic/rhetorical axes for the round first (§4 —
-  3–4 for a first round, more only if warranted), grounded
-  in what's actually distinctive in the material, not a generic grid.
-  Each variant is then drafted by its own **forked subagent** — full
-  context bundle plus its one axis, no visibility into other forks' output
-  — so variants stay independently-bet hypotheses rather than converging
-  mid-session. Feeds Stage 13.
+- **Exploration mode** — the applicant and agent agree on 3–4 genuinely
+  distinct strategic/rhetorical axes (§4), grounded in what's actually
+  distinctive in the material. Each variant is drafted by its own
+  **forked subagent** — full context bundle plus its one axis, no
+  visibility into other forks' output. Feeds Stage 13.
 - **Convergence mode** — one directed rewrite, done collaboratively
   in-conversation, incorporating the prior round's direction and retained
   phrases. No fork, no panel.
-- **Comparison mode** — variants share one already-converged base but
-  differ in how they were *produced*, not in strategic axis: e.g. the
-  base draft carried forward unmodified, Jeremy's own hand edit of it, a
-  pass through an external humanizing tool, and a freshly regenerated
-  draft incorporating the round's direction. No forking or in-conversation
-  drafting for the carried-forward/edited variants — they're assembled
-  directly in `output/drafts/genN/` from wherever their content actually
-  comes from. Runs the judge panel exactly like exploration mode (Stage
-  13's gate is simply "not convergence") — the point is comparing
-  production methods, not content strategy.
+- **Comparison mode** — variants share one converged base but differ in
+  production method (carried forward unmodified, hand edit, external
+  tool, fresh regeneration). Non-generated variants are assembled
+  directly in `output/drafts/genN/`. Judge-panelled like exploration mode
+  (Stage 13's gate is simply "not convergence").
 
 **Output:** one file per variant, `output/drafts/genN/<variant_id>.md` —
-every question's answer in a single document, each under a heading
-tagged with its question id (`## [q<question_id>] <human-readable prompt>`),
-so the whole variant is drafted (and read) as one coherent composition
-rather than four independently-generated pieces that need a separate
-cohesion instruction to compensate. Alongside it,
-`output/drafts/genN/<variant_id>.meta.json` (rationale + which model
-drafted it — Stage 13 needs at least one judge on a different model than
-this one, to reduce self-preference bias — plus, for comparison-mode
-variants, a `production_method` field and which prior variant it derives
-from). No per-variant folder — a variant is exactly these two files.
-`variant_id` is just the shared filename stem and can be anything (`v01`,
-or a lineage-carrying id like `r3v1-jh` for a comparison round) — nothing
-downstream assumes a `vNN` pattern. Every variant needs to pass Stage
-13's submission-readiness check before judging — see below.
+every question's answer in one document, each under a heading tagged
+with its question id (`## [q<question_id>] <prompt>`). Alongside it,
+`output/drafts/genN/<variant_id>.meta.json` (rationale, drafting model —
+Stage 13 needs at least one judge on a different model, plus, for
+comparison-mode variants, `production_method` and `derived_from`). No
+per-variant folder. `variant_id` is the filename stem, any string (`v01`,
+or a lineage id like `r3v1-jh`) — nothing downstream assumes a `vNN`
+pattern. Every variant must pass Stage 13's submission-readiness check
+before judging.
 
 ### Phase 4 — Naive HR screening (Stage 13)
 
 #### Stage 13 — Judge Panel Evaluation
-**Precondition: a cheap, non-naive submission-readiness check runs
-first.** Before running, the agent verifies `cv_tailored.md` and every
-drafted variant are actually ready to be scored — no placeholder tokens,
-no leftover internal notes/meta-commentary left in the content itself,
-and no near-duplicate content between a variant's own answers. This is a
-hygiene problem, not a judgment call, so it doesn't need Stage 13's
-naivety to catch it — it just needs to happen before spending judge-panel
-money on a defect a plain read would catch (the gen1 pilot ran an
-unfilled CV placeholder through 21 judge calls before this check
-existed — see `backlog.md`). Checklist: [`CLAUDE.md`](../CLAUDE.md#submission-ready-checklist).
+**Precondition:** submission-readiness check — `cv_tailored.md` and every
+drafted variant must have no placeholder tokens, no leftover internal
+notes, no near-duplicate content between a variant's own answers.
+Checklist: [`CLAUDE.md`](../CLAUDE.md#submission-ready-checklist).
 
-**Runs in exploration- and comparison-mode rounds; skipped for
-convergence.** `python scripts/run_judges.py
---gen N` — the pipeline's one scripted, isolated Anthropic API call;
-judges must never share context with the session that produced the
-material they're evaluating. Every (variant, judge) call is independent,
-so they run concurrently (a bounded thread pool, not one call at a time)
-— this is purely a scheduling optimization within the script and doesn't
-touch the isolation guarantee at all. Calls go through `_common.py`'s
-`call()` helper using the Messages API's streaming mode, not a single
-blocking request — these are large, high-effort generations (26 scored
-components + 4 questions + CV + section assessments + two overall
-comments per call) that can run long enough to trip the SDK's non-
-streaming request-duration limit otherwise. 3–5 judges, varied persona, at
-least one on a different model than the generator. Judges see the full
-`input/job_posting.md` text alongside its structured `jd_components.json`
-breakdown — a real screener reads the posting itself, not just a
-checklist derived from it. Each judge scores the whole package **once**
-(not per-question): every required/preferred
-qualification and core-responsibility item, a qualitative synopsis per
-section, every form question, the CV, and an independent holistic
-`vibe_score`/outcome/two overall comments — all per the rubric in
-`output/marking_guide.md` (Stage 3). `mission_signals` and voice/style are
-deliberately not scored here — style is Stage 4/12's job, not a naive HR
-screener's. Written to `output/evals/genN/vXX_<judge>.json`. Schema:
+Runs in exploration and comparison modes; skipped for convergence.
+`python scripts/run_judges.py --gen N` — the pipeline's one scripted,
+isolated API call. (Variant, judge) calls run concurrently (bounded
+thread pool) via `_common.py`'s streaming `call()` helper. 3–5 judges,
+varied persona, at least one on a different model than the generator.
+Judges see the full `input/job_posting.md` text alongside
+`jd_components.json`. Each judge scores the whole package once (not
+per-question): every required/preferred qualification and
+core-responsibility item, a synopsis per section, every form question,
+the CV, and an independent holistic `vibe_score`/outcome/two overall
+comments — per `output/marking_guide.md` (Stage 3). `mission_signals` and
+voice/style are not scored here. Written to
+`output/evals/genN/vXX_<judge>.json`. Schema:
 [`data_schemas.md`](data_schemas.md#judge-record).
 
 ### Phase 5 — Aggregate & understand outcome (Stages 14–15)
 
 #### Stage 14 — Aggregation
 `python scripts/aggregate.py --gen N` computes the deterministic numeric
-rollup — mean/variance per component per variant, a section-level rollup
-(by the three scored JD categories), per-question rollups, CV-evaluation
-consensus — into `output/evals/genN/summary.json`. Agent then reads every
-judge file directly and writes the qualitative synthesis into
-`summary.md`: top 2–3 variants, plus whichever comments recur across ≥2
-judges (the score says *that* something's wrong, the recurring comment
-says *what*).
+rollup — mean/variance per component per variant, a section-level
+rollup, per-question rollups, CV-evaluation consensus — into
+`output/evals/genN/summary.json`. Agent reads every judge file directly
+and writes the qualitative synthesis into `summary.md`: top 2–3 variants,
+plus comments recurring across ≥2 judges.
 
 #### Stage 15 — Human Sniff Check + Direction Capture
-Jeremy reads the top 2–3 variants and `summary.md` himself before
-anything regenerates — the ground-truth check a synthetic panel can't do
-alone. Produces `output/rounds/genN/direction.md`: freeform commentary,
-explicitly retained/dropped phrases, and his choice of mode for the next
-round.
+The applicant reads the top 2–3 variants and `summary.md` directly before
+anything regenerates. Produces `output/rounds/genN/direction.md`:
+commentary, explicitly retained/dropped phrases, and the mode choice for
+the next round.
 
 ### Phase 6 — Iterate (Stage 16)
 
 #### Stage 16 — Directed Iteration
 Not a fully automatic mutation loop. Agent reads `direction.md` +
 `summary.md` + `preferences.md` → `output/rounds/gen(N+1)/round_config.json`
-(finalized mode + variant count, pointer to the direction file, explicit
-retain/drop lists). Schema:
-[`data_schemas.md`](data_schemas.md#round_configjson). Jeremy approves or
-adjusts, then the cycle loops back to Phase 3 (or Phase 2, if the
-direction calls for gathering new context first).
+(finalized mode + variant count, pointer to the direction file, retain/
+drop lists). Schema: [`data_schemas.md`](data_schemas.md#round_configjson).
+The applicant approves or adjusts; the cycle loops back to Phase 3 (or
+Phase 2, if new context is needed first).
 
 ---
 
 ## 3. Repo structure
 
-Single-application/flat for now — no `applications/<slug>/` scaffolding
-yet. (A durable, cross-application "experience bank" for facts that
-surface mid-run is a stray future idea, not an active plan — revisit only
-once a second real application exists to show what's actually worth
-sharing vs. per-application.)
+Single-application/flat — no `applications/<slug>/` scaffolding yet.
 
 ```
 repo/
 ├── input/                        # gitignored — human-provided material
-│   ├── job_posting.md            # required — pasted verbatim by Jeremy
+│   ├── job_posting.md            # required — pasted verbatim by the applicant
 │   ├── cv/                       # required — one or more CV versions, any format/filename
 │   ├── essay/                    # required — one or more free-written content files
 │   ├── preferences.md            # optional — how to weight things, human-authored
@@ -328,50 +259,22 @@ repo/
 ```
 
 **Only code and documentation are public.** `input/` and `output/` are
-both gitignored, full stop — draft text, judge scores, and the tailored
-CV are the application's actual substance and strategy, not a
-repackaging of public information. See README.md ("Background").
+both gitignored — draft text, judge scores, and the tailored CV are the
+application's actual substance and strategy, not a repackaging of public
+information.
 
-`preferences.md` lives in `input/`, not `output/`, despite being a named
-stage (9) — it's human-authored, like `input/essay/`, not agent-generated.
+`preferences.md` lives in `input/`, not `output/` — human-authored, not
+agent-generated.
 
 ---
 
 ## 4. Variant count and round mode
 
-Default **3–4 variants** for a *first* exploration round — narrower than
-the 5–10 ceiling, since gen1 defaulted to 7 and 6 of those 7 landed
-statistically indistinguishable on overall score, evidence that the top
-of the range doesn't reliably buy more signal. Each round is explicitly one of three modes, chosen by Jeremy at Stage
-15: exploration (variant tournament across genuinely distinct strategic
-axes + judge panel), convergence (single refined draft, no panel), or
-comparison (variants sharing one converged base but differing in
-production method — hand edit, external tool, fresh regeneration — also
-judge-panelled, see Stage 12).
+Default **3–4 variants** for a first exploration round; widen to 5–10
+only if a round's `summary.md` shows scores bunched close together
+across many variants.
 
-Widen (up to 5–10) only if a round's `summary.md` shows scores bunched
-close together across many variants (the axes picked aren't
-discriminating) — that's the signal to add more axes/variants, not a
-default starting assumption.
-
----
-
-## 5. Overclaim guard, and where to find the rest of the story
-
-A real overclaim slipped through several drafting rounds in the original
-manual pilot before an independent read caught it (README "Background").
-The guard today is two plain checks, not a scored judge dimension: Stage
-11's `claims_checklist` for the CV, and Stage 4's drafting-guide
-consistency instruction for the essay. Both trace claims about Jeremy
-back to source fragments and refuse to let a draft exceed what those
-fragments support.
-
-That's the one piece of "why" load-bearing enough to restate here. For
-everything else — the naivety/context split's full reasoning, this
-guard's evolution across versions of the design, why Stages 1–2 use
-direct paste + itemize/verify instead of automated fetch, why voice
-profiling is one-shot, why the public/private line is drawn where it is,
-and the ongoing retrospective of what's actually been learned running
-this pipeline for real — see
-[`history_and_rationale.md`](history_and_rationale.md) and
-[`backlog.md`](backlog.md).
+Each round is explicitly one of three modes, chosen by the applicant at
+Stage 15: exploration (variant tournament + judge panel), convergence
+(single refined draft, no panel), or comparison (shared base, differing
+production method, also judge-panelled — see Stage 12).
